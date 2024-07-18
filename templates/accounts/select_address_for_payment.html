@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Select Address for Payment</title>
+    <!-- Include Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .address-item {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background-color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .address-item .info {
+            flex: 1;
+        }
+        .address-item label {
+            font-weight: bold;
+            display: block;
+        }
+        .address-item .edit-link {
+            margin-left: 10px;
+            color: #007bff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .address-item .edit-link:hover {
+            text-decoration: underline;
+        }
+        .btn-primary {
+            background-color: #e91e63;
+            border-color: #e91e63;
+        }
+        .btn-primary:hover {
+            background-color: #d81b60;
+            border-color: #d81b60;
+        }
+        .form-check {
+            display: flex;
+            align-items: center;
+        }
+        .form-check input {
+            margin-right: 10px;
+        }
+        .form-check label {
+            margin-bottom: 0;
+        }
+        .default-badge {
+            display: inline-block;
+            background-color: #ccc;
+            border-radius: 5px;
+            padding: 2px 5px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .selected {
+            border-color: #e91e63;
+        }
+        .selected label {
+            color: #e91e63;
+        }
+        .mt-3 {
+            margin-top: 1rem !important;
+        }
+        /* Adjust font sizes */
+        .form-check-label {
+            font-size: 16px; /* Larger font for name */
+        }
+        .address-details {
+            font-size: 14px; /* Smaller font for address details */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Select Address for Payment</h1>
+
+        {% if addresses %}
+            {% if messages %}
+                <div class="alert alert-danger">
+                    <ul>
+                        {% for message in messages %}
+                            <li>{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                {% for address in addresses %}
+                    <div class="address-item {% if address.is_default %}selected{% endif %}">
+                        <div class="form-check info">
+                            <input class="form-check-input" type="radio" id="address_{{ address.id }}" name="address" value="{{ address.id }}" {% if address.is_default %}checked{% endif %}>
+                            <label class="form-check-label" for="address_{{ address.id }}">
+                                <span class="form-check-label">{{ address.full_name }}</span><span class="default-badge">{% if address.is_default %}Default{% endif %}</span><br>
+                                <span class="address-details">{{ address.address_line_1 }}, {{ address.city }}, {{ address.state }} - {{ address.postal_code }}</span>
+                            </label>
+                        </div>
+                        <a href="{% url 'edit_address' address.id %}?next={% url 'select_address' %}" class="edit-link">Edit</a>
+                    </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary mt-3">Continue</button>
+            </form>
+            <p class="mt-3"><a href="{% url 'create_address' %}?next={% url 'select_address' %}" class="btn btn-secondary">Add a new address</a></p>
+        {% else %}
+            <p>You have no saved addresses. <a href="{% url 'create_address' %}?next={% url 'select_address' %}">Add a new address</a></p>
+        {% endif %}
+    </div>
+
+    <!-- Include Bootstrap JS (optional, if needed) -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8sh+oLr5m9sm3LqF+b2ERp6pIE1gauvF5P9anE" crossorigin="anonymous"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'accounts/css/styles.css' %}">
+</head>
+<body>
+    <div class="modal">
+        <form class="modal-content" method="POST" action="{% url 'user_login' %}">
+            <h2>Sign in</h2>
+            {% csrf_token %}
+            {% for field in form %}
+                <input type="{{ field.field.widget.input_type }}"
+                       id="{{ field.auto_id }}"
+                       name="{{ field.html_name }}"
+                       placeholder="{{ field.field.widget.attrs.placeholder }}">
+            {% endfor %}
+            {% if error %}
+                <p style="color: red;">{{ error }}</p>
+            {% endif %}
+            <button id="login" type="submit">Login</button>
+            <p>New to ToyTrendz? <a href="{% url 'user_register' %}">Join Us</a></p>
+            <hr>
+             <a href="{% url 'social:begin' 'google-oauth2' %}">Login with Google</a>
+        </form>
+    </div>
+    <!-- <script src="{% static 'js/scripts.js' %}"></script> -->
+</body>
+</html>

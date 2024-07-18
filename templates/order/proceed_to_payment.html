@@ -1,0 +1,81 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proceed to Payment</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f9f9f9;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .selected-address {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .selected-address p {
+            margin: 0;
+        }
+        .btn-primary {
+            background-color: #ff4081;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #e0356e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Proceed to Payment</h1>
+
+        <h2>Selected Address</h2>
+        <div class="selected-address">
+            <p>{{ address.full_name }}, {{ address.address_line_1 }}, {{ address.address_line_2 }}, {{ address.city }}, {{ address.state }} - {{ address.postal_code }}, {{ address.country }}, {{ address.phone_number }}</p>
+        </div>
+
+        <!-- Payment Form -->
+        <form method="post" action="">
+            {% csrf_token %}
+            <input type="hidden" name="address_id" value="{{ address.id }}">
+
+            <h3>Select Payment Method</h3>
+            <div class="form-group">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" id="payment_cod" name="payment_method" value="cod" required>
+                    <label class="form-check-label" for="payment_cod">
+                        Cash on Delivery (COD)
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" id="payment_credit_card" name="payment_method" value="credit_card" required>
+                    <label class="form-check-label" for="payment_credit_card">
+                        Credit Card
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" id="payment_debit_card" name="payment_method" value="debit_card" required>
+                    <label class="form-check-label" for="payment_debit_card">
+                        Debit Card
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" id="payment_net_banking" name="payment_method" value="net_banking" required>
+                    <label class="form-check-label" for="payment_net_banking">
+                        Net Banking
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Complete Payment</button>
+        </form>
+    </div>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

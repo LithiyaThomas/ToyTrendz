@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ product.product_name }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f8f8;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            min-width: 250px;
+            max-width: 250px;
+            background-color: #f8f9fa;
+            height: 100vh;
+            border-right: 1px solid #ddd;
+            padding-top: 20px;
+        }
+
+        .sidebar a {
+            padding: 15px;
+            text-decoration: none;
+            font-size: 18px;
+            color: #000;
+            display: block;
+        }
+
+        .sidebar a:hover {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        .sidebar a.active {
+            background-color: #e7e9fc;
+            color: #000;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+        }
+
+        .rating {
+            display: inline-block;
+            direction: rtl;
+            unicode-bidi: bidi-override;
+        }
+
+        .rating > span {
+            display: inline-block;
+            position: relative;
+            width: 1.1em;
+        }
+
+        .rating > span:hover,
+        .rating > span:hover ~ span {
+            color: transparent;
+        }
+
+        .rating > span:hover:before,
+        .rating > span:hover ~ span:before {
+            content: "\2605";
+            position: absolute;
+            left: 0;
+            color: gold;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        p {
+            font-size: 16px;
+            color: #555;
+        }
+
+        img {
+            max-width: 300px;
+            border-radius: 5px;
+        }
+
+        a {
+            text-decoration: none;
+            color: #007BFF;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .product-actions a {
+            margin-right: 10px;
+        }
+
+        .discount {
+            color: #FF5733;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none; /* Hide sidebar on smaller screens */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2 class="text-center">Dashboard</h2>
+        <a href="{% url 'user_data' %}">Users</a>
+        <a href="{% url 'category:category_list' %}">Categories</a>
+        <a href="{% url 'brand:brand_list' %}">Brands</a>
+        <a href="{% url 'product:product_list' %}" class="active">Products</a>
+        <a href="#">Cart</a>
+        <a href="#">Orders</a>
+        <a href="#">Sales Report</a>
+        <a href="#">Reviews</a>
+    </div>
+
+    <div class="main-content">
+        <h1>{{ product.product_name }}</h1>
+        <p>{{ product.product_description }}</p>
+        <p>Category: {{ product.product_category.category_name }}</p>
+        <p>Brand: {{ product.product_brand.name }}</p>
+        <p>Price: ${{ product.price }}</p>
+        <p>Offer Price: ${{ product.offer_price }}</p>
+        {% if product.thumbnail %}
+            <img src="{{ product.thumbnail.url }}" alt="{{ product.product_name }}">
+        {% endif %}
+        <p class="discount">Discount: {{ product.percentage_discount }}%</p>
+
+        <div class="product-actions">
+            <a href="{% url 'product_update' product.pk %}">Edit</a>
+            <a href="{% url 'product_delete' product.pk %}">Delete</a>
+            <a href="{% url 'product_variant_create' product.pk %}">Add Variant</a>
+            <a href="{% url 'product_image_create' product.pk %}">Add Image</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Address</title>
+  <!-- Include Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    body {
+      background-color: #f9f9f9;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    .form-control {
+      border-radius: 0;
+      box-shadow: none;
+      font-size: 16px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .btn-primary {
+      background-color: #ff4081;
+      border: none;
+      padding: 10px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .btn-primary:hover {
+      background-color: #e0356e;
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    .form-check-label {
+      margin-left: 5px;
+    }
+
+    .btn-container {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .btn-container .btn {
+      flex: 0 0 48%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container mt-5">
+    <h2>Edit Address</h2>
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="id_full_name">Full Name</label>
+        <input type="text" class="form-control" id="id_full_name" name="full_name" value="{{ address.full_name }}" required>
+      </div>
+      <div class="form-group">
+        <label for="id_phone_number">Phone Number</label>
+        <input type="text" class="form-control" id="id_phone_number" name="phone_number" value="{{ address.phone_number }}" required>
+      </div>
+      <div class="form-group">
+        <label for="id_address_line_1">Address Line 1</label>
+        <input type="text" class="form-control" id="id_address_line_1" name="address_line_1" value="{{ address.address_line_1 }}" required>
+      </div>
+      <div class="form-group">
+        <label for="id_address_line_2">Address Line 2</label>
+        <input type="text" class="form-control" id="id_address_line_2" name="address_line_2" value="{{ address.address_line_2 }}">
+      </div>
+      <div class="form-group">
+        <label for="id_city">City</label>
+        <input type="text" class="form-control" id="id_city" name="city" value="{{ address.city }}" required>
+      </div>
+      <div class="form-group">
+        <label for="id_state">State</label>
+        <input type="text" class="form-control" id="id_state" name="state" value="{{ address.state }}" required>
+      </div>
+      <div class="form-group">
+        <label for="id_postal_code">Postal Code</label>
+        <input type="text" class="form-control" id="id_postal_code" name="postal_code" value="{{ address.postal_code }}" required>
+      </div>
+      <div class="form-group">
+        <label for="id_country">Country</label>
+        <input type="text" class="form-control" id="id_country" name="country" value="{{ address.country }}" required>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="id_is_default" name="is_default" {% if address.is_default %}checked{% endif %}>
+        <label class="form-check-label" for="id_is_default">
+          Set as default address
+        </label>
+      </div>
+      <div class="btn-container mt-3">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="{% url 'home' %}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Include Bootstrap JS (optional, if needed) -->
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8sh+oLr5m9sm3LqF+b2ERp6pIE1gauvF5P9anE" crossorigin="anonymous"></script>
+</body>
+</html>

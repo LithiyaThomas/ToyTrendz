@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Product List</title>
+  <style>
+        /* Navbar styles */
+        .navbar {
+            background-color: #ed54a4;
+            padding: 10px 20px;
+            color: #fff;
+            font-size: 18px;
+            text-align: center;
+        }
+        .bg-hopscotch { background-color: #ff69b4; }
+        .btn-hopscotch { background-color: #ff69b4; border-color: #ff69b4; }
+        .btn-hopscotch:hover { background-color: #ff4da6; border-color: #ff4da6; }
+header {
+    background-color: #ff69b4;
+    color: #fff;
+    padding: 20px 0; /* Increased from 10px to 20px */
+}
+
+header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 28px; /* Increased from 24px to 28px */
+}
+
+header .navigation {
+    display: flex;
+}
+
+header .navigation a {
+    color: #fff;
+    text-decoration: none;
+    margin-left: 25px; /* Increased from 20px to 25px for more spacing */
+    font-size: 18px; /* Increased from 16px to 18px */
+    padding: 5px 0; /* Added padding to increase clickable area */
+}
+
+header .navigation a:hover {
+    text-decoration: underline;
+}
+
+        /* Layout styles */
+        .container {
+            display: flex;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+            justify-content: space-between;
+        }
+
+        /* Sidebar styles */
+        .sidebar {
+            width: 25%;
+            padding: 20px;
+            border-right: 1px solid #ccc;
+        }
+
+        .sidebar .form-group {
+            margin-bottom: 20px;
+        }
+
+        .sidebar .form-group label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-control, .btn {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background-color: #00bcd4;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .btn-primary:hover {
+            background-color: #00796b;
+        }
+
+        /* Product list styles */
+        .product-list {
+            width: 75%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            padding: 20px;
+        }
+
+        .product-card {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px;
+            width: 300px;
+            display: inline-block;
+            vertical-align: top;
+            background-color: #fff;
+            text-align: center;
+        }
+
+        .product-card img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 10px;
+        }
+
+        .product-card h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .product-card p {
+            margin-bottom: 8px;
+        }
+
+        .product-card .price {
+            font-weight: bold;
+            color: #009688;
+        }
+
+        .product-card .add-to-cart-btn {
+            background-color: #00bcd4;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+        }
+
+        .product-card .add-to-cart-btn:hover {
+            background-color: #00796b;
+        }
+
+        .product-card .product-description {
+            font-size: 12px;
+            line-height: 16px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+        }
+
+        /* Sort By styles */
+        .sort-by-container {
+            margin-bottom: 20px;
+        }
+
+        .sort-by-container label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .sort-by-options {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .sort-by-options li {
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .sort-by-options li:last-child {
+            border-bottom: none;
+        }
+
+        .sort-by-options input[type="checkbox"] {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+    <div class="container">
+        <h1>COZY CRIBS</h1>
+        <nav class="navigation">
+            <a href="#">Discover</a>
+            <a href="#">All</a>
+            <a href="#">Moments</a>
+            <a href="#">Blog</a>
+            <a href="#">24x7 Customer care</a>
+        </nav>
+    </div>
+</header>
+
+    <div class="container">
+        <div class="sidebar">
+            <form method="GET" action="{% url 'user_panel:user_products' %}">
+                <div class="form-group">
+                    <label for="search">Search Products</label>
+                    <input type="text" name="q" id="search" class="form-control" placeholder="Search products" value="{{ request.GET.q }}">
+                </div>
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select name="category" id="category" class="form-control">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                            <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"s" %}selected{% endif %}>{{ category.category_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group sort-by-container">
+                    <label for="sort_by">Sort By</label>
+                    <ul class="sort-by-options" id="sort_by">
+                        <li>
+                            <label><input type="checkbox" name="sort_by" value="popularity" {% if sort_by == 'popularity' %}checked{% endif %}> Popularity</label>
+                        </li>
+                        <li>
+                            <label><input type="checkbox" name="sort_by" value="price_low_high" {% if sort_by == 'price_low_high' %}checked{% endif %}> Price: Low to High</label>
+                        </li>
+                        <li>
+                            <label><input type="checkbox" name="sort_by" value="price_high_low" {% if sort_by == 'price_high_low' %}checked{% endif %}> Price: High to Low</label>
+                        </li>
+                        <li>
+                            <label><input type="checkbox" name="sort_by" value="average_ratings" {% if sort_by == 'average_ratings' %}checked{% endif %}> Average Ratings</label>
+                        </li>
+                        <li>
+                            <label><input type="checkbox" name="sort_by" value="featured" {% if sort_by == 'featured' %}checked{% endif %}> Featured</label>
+                        </li>
+                        <li>
+                            <label><input type="checkbox" name="sort_by" value="new_arrivals" {% if sort_by == 'new_arrivals' %}checked{% endif %}> New Arrivals</label>
+                        </li>
+                        <li>
+                            <label><input type="checkbox" name="sort_by" value="a_to_z" {% if sort_by == 'a_to_z' %}checked{% endif %}> A-Z</label>
+                        </li>
+                        <li>
+                            <label><input type="checkbox" name="sort_by" value="z_to_a" {% if sort_by == 'z_to_a' %}checked{% endif %}> Z-A</label>
+                        </li>
+                        <li>
+                            <label><input type="checkbox" name="sort_by" value="color" {% if sort_by == 'color' %}checked{% endif %}> Color</label>
+                        </li>
+                    </ul>
+                </div>
+                <button type="submit" class="btn btn-primary">Search</button>
+            </form>
+        </div>
+
+        <div class="product-list">
+            {% for product in products %}
+            <a href="{% url 'user_panel:product_detail' pk=product.id %}">
+                <div class="product-card">
+                    {% if product.thumbnail %}
+                        <img src="{{ product.thumbnail.url }}" alt="{{ product.product_name }}">
+                    {% endif %}
+                    <h2>{{ product.product_name }}</h2>
+                    <p class="product-description">{{ product.product_description }}</p>
+                    <p>Category: {{ product.product_category.category_name }}</p>
+                    <p>Brand: {{ product.product_brand.name }}</p>
+                    <p>Price: <span class="price">${{ product.price }}</span></p>
+                    <p>Offer Price: <span class="price">${{ product.offer_price }}</span></p>
+                    <button class="add-to-cart-btn">Add to Cart</button>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

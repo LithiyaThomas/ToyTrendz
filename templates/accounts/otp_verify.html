@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify OTP</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .btn-custom {
+            background-color: #FF4081;
+            border-color: #FF4081;
+            color: white;
+        }
+
+        .btn-custom:hover {
+            background-color: #e03670;
+            border-color: #e03670;
+        }
+
+        .modal-header .close {
+            margin: -1rem -1rem -1rem auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Modal -->
+        <div class="modal fade" id="otpModal" tabindex="-1" role="dialog" aria-labelledby="otpModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="otpModalLabel">Verify email</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+<!--                        <p>Enter the OTP sent to your email <strong>{{ user_data.email }}</strong> <a href="{% url 'user_register' %}">Change</a></p>-->
+                        <form method="post" id="otp-form">
+                            {% csrf_token %}
+                            <div class="form-group text-center">
+                                <input type="password" id="otp" name="entered_otp" class="form-control text-center" maxlength="6" placeholder="● ● ● ● ● ●" required>
+                            </div>
+                            <button type="submit" class="btn btn-custom btn-block">Verify</button>
+                        </form>
+                        <p class="text-center mt-3">Resend OTP in <span id="timer"></span></p>
+                        <div id="expired-message" class="text-center" style="display: none;">
+                            <p>Your OTP has expired.  <a href="{% url 'resend_otp' %}" class="btn btn-custom btn-block">Resend OTP</a>.</p>
+                        </div>
+                        {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-warning mt-2">{{ message }}</div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            $('#otpModal').modal('show');
+
+            const otpExpirationTime = new Date('{{ otp_expiration_time }}');
+            const timerElement = document.getElementById('timer');
+
+            function updateTimer() {
+                const now = new Date();
+                const timeRemaining = Math.max(0, otpExpirationTime - now);
+
+                const minutes = Math.floor(timeRemaining / 60000);
+                const seconds = Math.floor((timeRemaining % 60000) / 1000);
+
+                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                if (timeRemaining > 0) {
+                    setTimeout(updateTimer, 1000);
+                } else {
+
+                    document.getElementById('otp-form').style.display = 'none';
+                    document.getElementById('expired-message').style.display = 'block';
+                }
+            }
+
+            updateTimer();
+        });
+    </script>
+</body>
+</html>

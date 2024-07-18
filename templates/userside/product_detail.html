@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Detail: {{ product.product_name }}</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .bg-hopscotch { background-color: #ff69b4; }
+        .btn-hopscotch { background-color: #ff69b4; border-color: #ff69b4; }
+        .btn-hopscotch:hover { background-color: #ff4da6; border-color: #ff4da6; }
+
+        .nav-link-spacing {
+    margin-right: 15px; /* Adjust the spacing as needed */
+}
+        .breadcrumbs {
+            margin: 20px 0;
+        }
+        .breadcrumbs a {
+            color: #ed54a4;
+            text-decoration: none;
+        }
+        .breadcrumbs span {
+            margin: 0 5px;
+        }
+        .product-container {
+            margin-top: 20px;
+        }
+        .side-images {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+        .side-image, .main-product-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .main-image-container {
+            width: 100%;
+            max-width: 400px;
+            height: 400px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .side-image-container {
+            width: 80px;
+            height: 80px;
+            overflow: hidden;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .product-details {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .price, .discount {
+            font-weight: bold;
+        }
+        .price {
+            color: #009688;
+        }
+        .discount {
+            color: red;
+        }
+        .add-to-cart-btn {
+            background-color: #ed54a4;
+            color: #fff;
+            border: none;
+            padding: 10px 80px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .custom-submit-btn {
+            background-color: #ed54a4;
+            color: #fff;
+            border: none;
+            padding: 12px 40px;
+            font-size: 18px;
+            border-radius: 5px;
+        }
+        .ratings .fa-star {
+            color: #ffcc00;
+        }
+        .rating-form {
+            border-top: 1px solid #ccc;
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+        .star-rating {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .star-rating input {
+            display: none;
+        }
+        .star-rating label {
+            font-size: 24px;
+            color: #ddd;
+            cursor: pointer;
+        }
+        .star-rating input:checked ~ label,
+        .star-rating label:hover,
+        .star-rating label:hover ~ label {
+            color: #ffcc00;
+        }
+        .rating-display {
+            display: flex;
+            gap: 5px;
+        }
+        .zoomWindowContainer {
+            z-index: 9999;
+        }
+        .variant-circle.selected {
+            box-shadow: 0 0 0 2px #ed54a4;
+        }
+        .quantity-selection {
+            margin-top: 20px;
+        }
+        .quantity-selection input[type="number"] {
+            width: 60px;
+            text-align: center;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            padding: 5px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body>
+   <header class="bg-hopscotch text-white py-3">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <h1 class="h4 mb-0">COZY CRIBS</h1>
+            </div>
+            <div class="col d-flex justify-content-end align-items-center">
+                <span class="discover text-white text-decoration-none">Discover</span>
+                <span class="mx-2"></span>
+                <span class="all text-white text-decoration-none mx-3">All</span>
+                <span class="mx-2"></span>
+                <span class="moments text-white text-decoration-none mx-3">Moments</span>
+                <span class="mx-2"></span>
+                <span class="blog text-white text-decoration-none mx-3">Blog</span>
+                <span class="mx-2"></span>
+                <a href="#" class="text-white text-decoration-none ml-3">24x7 Customer care</a>
+            </div>
+        </div>
+    </div>
+</header>
+
+   <div class="container">
+
+       <nav class="breadcrumbs">
+            <a href="{% url 'user_panel:user_products' %}">Home</a>
+            <span>&gt;</span>
+            <a href="{% url 'user_panel:user_products' %}">Products</a>
+            <span>&gt;</span>
+            <span>{{ product.product_name }}</span>
+        </nav>
+
+           <div class="row product-container">
+        <div class="col-md-6">
+            <div class="main-image-container text-center">
+                <img id="zoom_mw" src="{{ selected_variant.productvariantimage_set.first.image.url }}"
+                     data-zoom-image="{{ selected_variant.productvariantimage_set.first.image.url }}"
+                     alt="{{ product.product_name }}" class="main-product-image">
+            </div>
+
+            <div class="side-images">
+                {% for image in variant_images %}
+                    <div class="side-image-container" data-color="{{ image.variant.colour_name }}">
+                        <img src="{{ image.image.url }}" alt="Variant Image" class="side-image"
+                             onclick="updateMainImage('{{ image.image.url }}')">
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+         <div class="col-md-6">
+            <div class="product-details">
+                <h1>{{ product.product_name }}</h1>
+                <p>{{ product.product_description }}</p>
+                <p><strong>Category:</strong> {{ product.product_category.category_name }}</p>
+                <p><strong>Brand:</strong> {{ product.product_brand.name }}</p>
+                <p><strong>Price:</strong> <span class="price">${{ product.price }}</span></p>
+                <p><strong>Offer Price:</strong> <span class="price">${{ product.offer_price }}</span></p>
+
+                <form id="add-to-cart-form" method="post" action="{% url 'cart:add_to_cart' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="product" value="{{ product.id }}">
+
+                    <div id="variant" class="d-flex">
+                        {% for variant in variants %}
+                            <label class="variant-circle d-inline-block rounded-circle border border-dark position-relative mr-2"
+                                   style="background-color: {{ variant.colour_code }}; width: 20px; height: 20px; padding: 5px; cursor: pointer;">
+                                <input type="radio" name="variant" value="{{ variant.id }}" data-color="{{ variant.colour_name }}"
+                                       {% if forloop.first %}checked{% endif %} onchange="filterImages(this.dataset.color)">
+                            </label>
+                        {% endfor %}
+                    </div>
+
+                    <div class="quantity-selection mt-3">
+                        <label for="quantity" class="mr-2"><strong>Quantity:</strong></label>
+                        <button type="button" class="btn btn-outline-secondary" id="quantity-minus">-</button>
+                        <input type="number" id="quantity" name="quantity" min="1" value="1">
+                        <button type="button" class="btn btn-outline-secondary" id="quantity-plus">+</button>
+                    </div>
+
+                    <button type="submit" class="add-to-cart-btn mt-3">Add to Cart</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="delivery-info">
+                <h2>Delivery</h2>
+                <p>Get it in <span style="color: green;">2-3 days</span>. Usually ships within a day.</p>
+                <p>Cash on delivery available.</p>
+                <p>15 days return.</p>
+                <p>15 days exchange.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="ratings">
+                <h2>Ratings</h2>
+                {% if ratings %}
+                    <p>Average Rating:
+                        <div class="rating-display">
+                            {% for i in rating_range %}
+                                {% if i <= product.average_rating %}
+                                    <span class="fa fa-star"></span>
+                                {% else %}
+                                    <span class="fa fa-star-o"></span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        ({{ product.total_reviews }} reviews)
+                    </p>
+                    <ul class="list-unstyled">
+                        {% for rating in ratings %}
+                            <li class="media mb-2">
+                                <div class="media-body">
+                                    <div class="rating-display">
+                                        {% for i in rating_range %}
+                                            {% if i <= rating.rating %}
+                                                <span class="fa fa-star"></span>
+                                            {% else %}
+                                                <span class="fa fa-star-o"></span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <span>{{ rating.review }}</span>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No ratings yet.</p>
+                {% endif %}
+            </div>
+
+            <div class="rating-form mt-4">
+                {% if user_rating %}
+                    <h2>Your Rating</h2>
+                    <p>
+                        <div class="rating-display">
+                            {% for i in rating_range %}
+                                {% if i <= user_rating.rating %}
+                                    <span class="fa fa-star"></span>
+                                {% else %}
+                                    <span class="fa fa-star-o"></span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <span>{{ user_rating.review }}</span>
+                    </p>
+                {% elif user.is_authenticated %}
+                    <h2>Leave a Rating</h2>
+                    <form method="POST" action="{% url 'user_panel:add_rating' product.pk %}">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="rating">Rating</label>
+                            <div class="star-rating">
+                                <input type="radio" id="5-stars" name="rating" value="5" />
+                                <label for="5-stars" class="fa fa-star"></label>
+                                <input type="radio" id="4-stars" name="rating" value="4" />
+                                <label for="4-stars" class="fa fa-star"></label>
+                                <input type="radio" id="3-stars" name="rating" value="3" />
+                                <label for="3-stars" class="fa fa-star"></label>
+                                <input type="radio" id="2-stars" name="rating" value="2" />
+                                <label for="2-stars" class="fa fa-star"></label>
+                                <input type="radio" id="1-star" name="rating" value="1" />
+                                <label for="1-star" class="fa fa-star"></label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="review">Review</label>
+                            <textarea class="form-control" id="review" name="review" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="custom-submit-btn">Submit</button>
+                    </form>
+                {% else %}
+                    <p><a href="{% url 'user_login' %}?next={{ request.path }}">Log in</a> to leave a rating.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if related_products %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h3>Related Products</h3>
+        </div>
+    </div>
+    <div class="row">
+        {% for related_product in related_products %}
+        <div class="col-md-3">
+            <div class="card">
+                <img src="{{ related_product.thumbnail.url }}" class="card-img-top" alt="{{ related_product.product_name }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ related_product.product_name }}</h5>
+                    <p class="card-text">${{ related_product.price }}</p>
+                    <a href="{% url 'user_panel:product_detail' related_product.id %}" class="btn btn-primary">View Product</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-elevatezoom/3.0.8/jquery.elevatezoom.min.js"></script>
+<script>
+function updateMainImage(imageUrl) {
+    var mainImage = document.getElementById('zoom_mw');
+    mainImage.src = imageUrl;
+    mainImage.setAttribute('data-zoom-image', imageUrl);
+
+    // Reinitialize elevateZoom plugin after updating the image
+    $('#zoom_mw').elevateZoom({
+        zoomType: "lens",
+        lensShape: "round",
+        lensSize: 200,
+        borderSize: 1,
+        borderColour: "#ccc"
+    });
+}
+
+function filterImages(color) {
+    const sideImages = document.querySelectorAll('.side-image-container');
+    sideImages.forEach(image => {
+        if (image.dataset.color === color) {
+            image.style.display = 'flex';
+        } else {
+            image.style.display = 'none';
+        }
+    });
+
+    // Update main image to first image of selected color
+    const firstVisibleImage = document.querySelector(`.side-image-container[data-color="${color}"] img`);
+    if (firstVisibleImage) {
+        updateMainImage(firstVisibleImage.src);
+    }
+}
+
+// Call this function on page load to set initial state
+document.addEventListener('DOMContentLoaded', () => {
+    const checkedVariant = document.querySelector('input[name="variant"]:checked');
+    if (checkedVariant) {
+        filterImages(checkedVariant.dataset.color);
+    }
+});
+</script>
+
+
+
+
+<script>
+// Add to cart functionality using vanilla JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    var addToCartForm = document.getElementById('add-to-cart-form');
+    if (addToCartForm) {
+        addToCartForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent the form from submitting normally
+
+            var product_id = document.querySelector('input[name="product"]').value;
+            var variant_id = document.querySelector('input[name="variant"]:checked').value;
+            var quantity = document.getElementById('quantity').value;
+
+            var formData = new FormData();
+            formData.append('product', product_id);
+            formData.append('variant', variant_id);
+            formData.append('quantity', quantity);
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '{% url "cart:add_to_cart" %}', true); // URL path for adding to cart
+            xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken')); // Ensure CSRF token is included
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        var response = JSON.parse(xhr.responseText);
+                        if (response.success) {
+                            alert('Product added to cart successfully!');
+                            // Optionally, update the cart display without reloading the page
+                        } else {
+                            alert(response.message || 'Error adding product to cart');
+                        }
+                    } catch (e) {
+                        console.error('Error parsing JSON response:', e);
+                        alert('An error occurred while adding the product to the cart.');
+                    }
+                } else {
+                    alert('An error occurred while adding the product to the cart.');
+                }
+            };
+
+            xhr.onerror = function() {
+                alert('An error occurred while adding the product to the cart.');
+            };
+
+            xhr.send(formData);
+        });
+    }
+
+    // Quantity increment/decrement functionality
+    var quantityInput = document.getElementById('quantity');
+    var quantityPlus = document.getElementById('quantity-plus');
+    var quantityMinus = document.getElementById('quantity-minus');
+
+    quantityPlus.addEventListener('click', function() {
+        quantityInput.value = parseInt(quantityInput.value) + 1;
+    });
+
+    quantityMinus.addEventListener('click', function() {
+        if (parseInt(quantityInput.value) > 1) {
+            quantityInput.value = parseInt(quantityInput.value) - 1;
+        }
+    });
+});
+
+// Function to get CSRF token from cookie
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+
+
+
+</body>
+</html>

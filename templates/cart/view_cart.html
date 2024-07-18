@@ -56,7 +56,32 @@
     </header>
 
     <main class="container my-5">
-        {% if cart_items %}
+        {% if is_cart_empty %}
+        <div class="text-center">
+            <h1 class="mb-4">Cart is empty :</h1>
+            <i class="bi bi-cart4 display-1 text-muted mb-3"></i>
+            <p class="lead">There's nothing in here</p>
+            <p>You have not added any items to your cart yet.</p>
+            <a href="{% url 'user_panel:user_products' %}" class="btn btn-hopscotch text-white mt-3">SHOP NOW</a>
+        </div>
+        <div class="row mt-5">
+            <div class="col-md-4 text-center mb-3">
+                <i class="bi bi-truck display-4 mb-2"></i>
+                <h3>Free Shipping*</h3>
+                <p>On orders of $899 and above.</p>
+            </div>
+            <div class="col-md-4 text-center mb-3">
+                <i class="bi bi-arrow-counterclockwise display-4 mb-2"></i>
+                <h3>Easy returns</h3>
+                <p>Send items back for free within 15 days</p>
+            </div>
+            <div class="col-md-4 text-center mb-3">
+                <i class="bi bi-shield-check display-4 mb-2"></i>
+                <h3>Secure shopping</h3>
+                <p>Your payment details are fully encrypted</p>
+            </div>
+        </div>
+        {% else %}
         <h1 class="mb-4">Your Cart <span class="badge bg-secondary">{{ cart_items|length }} items</span></h1>
         <div class="row">
             <div class="col-md-8">
@@ -79,7 +104,7 @@
                                     </div>
                                     <button type="button" class="btn btn-danger btn-sm" onclick="confirmRemove('{{ item.id }}')">Remove</button>
                                 </div>
-                                <p class="card-text small mt-2" id="item-subtotal-{{ item.id }}">Subtotal: ${{ item.get_total_item_price }}</p>
+                                <p class="card-text small mt-2" id="item-subtotal-{{ item.id }}">Subtotal: ${{ item.total_price }}</p>
                             </div>
                         </div>
                     </div>
@@ -91,14 +116,12 @@
                     <div class="card-body">
                         <h5 class="card-title">Cart Summary</h5>
                         <p class="card-text">Total Items: <span id="cart-total-items">{{ cart_items|length }}</span></p>
-                        <p class="card-text">Total Price: $<span id="cart-total-price">{{ cart.get_total_price }}</span></p>
+                        <p class="card-text">Total Price: $<span id="cart-total-price">{{ total }}</span></p>
                         <a href="{% url 'select_address' %}" class="btn btn-hopscotch text-white w-100 mt-3">Proceed to Checkout</a>
                     </div>
                 </div>
             </div>
         </div>
-        {% else %}
-        <div class="alert alert-warning">Your cart is empty.</div>
         {% endif %}
     </main>
 
@@ -144,6 +167,11 @@
                         'The item has been removed from your cart.',
                         'success'
                     );
+
+                    // Check if cart is empty after removal
+                    if (data.total_items === 0) {
+                        location.reload(); // Reload the page to show empty cart view
+                    }
                 } else {
                     Swal.fire(
                         'Error!',
@@ -152,46 +180,46 @@
                     );
                 }
             });
-
         }
 
-      function updateQuantity(itemId, quantity, stock) {
-    let url = '{% url "cart:update_quantity" item_id=0 %}'.replace('0', itemId);
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': '{{ csrf_token }}',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ quantity: quantity })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            document.getElementById('quantity' + itemId).value = quantity;
-            document.getElementById('item-price-' + itemId).innerText = 'Price: $' + data.item_price.toFixed(2);
-            document.getElementById('item-subtotal-' + itemId).innerText = 'Subtotal: $' + data.item_total.toFixed(2);
-            updateCartSummary(data.cart_total, data.total_items);
-        } else {
-            Swal.fire('Error!', data.message || 'There was a problem updating the item quantity.', 'error');
+        function updateQuantity(itemId, quantity, stock) {
+            let url = '{% url "cart:update_quantity" item_id=0 %}'.replace('0', itemId);
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ quantity: quantity })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('quantity' + itemId).value = quantity;
+                    document.getElementById('item-price-' + itemId).innerText = 'Price: $' + data.item_price.toFixed(2);
+                    document.getElementById('item-subtotal-' + itemId).innerText = 'Subtotal: $' + data.item_total.toFixed(2);
+                    updateCartSummary(data.cart_total, data.total_items);
+                } else {
+                    Swal.fire('Error!', data.message || 'There was a problem updating the item quantity.', 'error');
+                }
+            });
         }
-    });
-}
-       function incrementQuantity(itemId, stock) {
-    let quantityInput = document.getElementById('quantity' + itemId);
-    let currentQuantity = parseInt(quantityInput.value);
-    if (currentQuantity < stock) {
-        updateQuantity(itemId, currentQuantity + 1, stock);
-    }
-}
 
-function decrementQuantity(itemId, stock) {
-    let quantityInput = document.getElementById('quantity' + itemId);
-    let currentQuantity = parseInt(quantityInput.value);
-    if (currentQuantity > 1) {
-        updateQuantity(itemId, currentQuantity - 1, stock);
-    }
-}
+        function incrementQuantity(itemId, stock) {
+            let quantityInput = document.getElementById('quantity' + itemId);
+            let currentQuantity = parseInt(quantityInput.value);
+            if (currentQuantity < stock) {
+                updateQuantity(itemId, currentQuantity + 1, stock);
+            }
+        }
+
+        function decrementQuantity(itemId, stock) {
+            let quantityInput = document.getElementById('quantity' + itemId);
+            let currentQuantity = parseInt(quantityInput.value);
+            if (currentQuantity > 1) {
+                updateQuantity(itemId, currentQuantity - 1, stock);
+            }
+        }
 
         function updateCartSummary(total, itemCount) {
             document.getElementById('cart-total-items').innerText = itemCount;

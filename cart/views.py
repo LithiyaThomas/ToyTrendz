@@ -7,20 +7,21 @@ from .models import Cart, CartItem
 from product.models import Product, ProductVariant
 from coupon.models import Coupon
 from django.views.decorators.http import require_POST
+import json
 
 
 # Create your views here.
 
 
 @login_required
-@csrf_exempt  # Use csrf_exempt only if you are handling CSRF protection manually
+@csrf_exempt
 def add_to_cart(request):
     if request.method == "POST":
         try:
             # Retrieve data from POST request
             product_id = request.POST.get("product")
             variant_id = request.POST.get("variant")
-            quantity = int(request.POST.get("quantity", 1))  # Default quantity to 1 if not provided
+            quantity = int(request.POST.get("quantity", 1))
 
             # Validate variant_id
             if not variant_id:
@@ -93,15 +94,34 @@ def view_cart(request):
     try:
         cart = Cart.objects.get(user=request.user)
         cart_items = CartItem.objects.filter(cart=cart)
+        subtotal = 0
         for item in cart_items:
             item.total_price = item.quantity * item.variant.product.price
+            subtotal += item.total_price
+
+        # Apply coupon if exists
+        discount_amount, total = apply_coupon(cart, subtotal)
+
     except Cart.DoesNotExist:
         # Create a new cart if it doesn't exist
         cart = Cart.objects.create(user=request.user)
-        cart_items = CartItem.objects.filter(cart=cart)
+        cart_items = []
+        subtotal = 0
+        discount_amount = 0
+        total = 0
 
-    return render(request, 'cart/view_cart.html', {'cart': cart, 'cart_items': cart_items})
+    # Check if the cart is empty
+    is_cart_empty = len(cart_items) == 0
 
+    context = {
+        'cart': cart,
+        'cart_items': cart_items,
+        'is_cart_empty': is_cart_empty,
+        'subtotal': subtotal,
+        'discount_amount': discount_amount,
+        'total': total
+    }
+    return render(request, 'cart/view_cart.html', context)
 
 
 
@@ -111,27 +131,28 @@ def remove_cart_item(request, item_id):
     if request.method == "POST":
         try:
             cart_item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
+            cart = cart_item.cart
             cart_item.delete()
 
-            cart = cart_item.cart
             total_price = cart.get_total_price()
             cart.discount_amount, cart.discounted_price = apply_coupon(cart, total_price)
             cart.save()
 
-            return redirect('cart:view_cart')
+            # Get updated cart information
+            cart_items = CartItem.objects.filter(cart=cart)
+            total_items = cart_items.count()
 
-            # return JsonResponse({
-            #     'success': True,
-            #     'message': 'Cart item removed',
-            #     'total_price': total_price,
-            #     'discount_amount': cart.discount_amount,
-            #     'discounted_price': cart.discounted_price
-            # })
+            return JsonResponse({
+                "success": True,
+                "cart_total": float(cart.discounted_price),
+                "total_items": total_items,
+                "message": "Item removed successfully"
+            })
 
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=400)
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
 
-    return redirect('cart:view_cart')
+    return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
 
 @login_required
 def filter_out_of_stock(request):
@@ -150,13 +171,6 @@ def advanced_search(request):
     products = Product.objects.filter(name__icontains=query).order_by(sort_by)
     return render(request, 'product/product_list.html', {'products': products})
 
-
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
-from .models import CartItem
-import json
 
 
 @csrf_exempt

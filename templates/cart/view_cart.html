@@ -95,7 +95,7 @@
                             <div class="card-body">
                                 <h5 class="card-title fs-6">{{ item.variant.product.product_name }}</h5>
                                 <p class="card-text small">Variant: {{ item.variant.colour_name }}</p>
-                                <p class="card-text small" id="item-price-{{ item.id }}">Price: ${{ item.variant.product.price }}</p>
+                                <p class="card-text small" id="item-price-{{ item.id }}">Price: ${{ item.variant.product.offer_price }}</p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div class="d-flex align-items-center">
                                         <button type="button" class="quantity-btn" onclick="decrementQuantity('{{ item.id }}', '{{ item.variant.variant_stock }}')">-</button>
@@ -117,7 +117,7 @@
                         <h5 class="card-title">Cart Summary</h5>
                         <p class="card-text">Total Items: <span id="cart-total-items">{{ cart_items|length }}</span></p>
                         <p class="card-text">Total Price: $<span id="cart-total-price">{{ total }}</span></p>
-                        <a href="{% url 'select_address' %}" class="btn btn-hopscotch text-white w-100 mt-3">Proceed to Checkout</a>
+                        <a href="{% url 'order:checkout'  %}" class="btn btn-hopscotch text-white w-100 mt-3">Proceed to Checkout</a>
                     </div>
                 </div>
             </div>
@@ -153,77 +153,70 @@
             fetch(url, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json'
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            }).then(response => {
+                if (response.ok) {
                     document.getElementById('cart-item-' + itemId).remove();
-                    updateCartSummary(data.cart_total, data.total_items);
+                    updateCartSummary();
                     Swal.fire(
                         'Removed!',
                         'The item has been removed from your cart.',
                         'success'
                     );
-
-                    // Check if cart is empty after removal
-                    if (data.total_items === 0) {
-                        location.reload(); // Reload the page to show empty cart view
-                    }
                 } else {
                     Swal.fire(
                         'Error!',
-                        'There was a problem removing the item from your cart.',
+                        'There was an error removing the item from your cart.',
                         'error'
                     );
                 }
             });
         }
 
-        function updateQuantity(itemId, quantity, stock) {
-            let url = '{% url "cart:update_quantity" item_id=0 %}'.replace('0', itemId);
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ quantity: quantity })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('quantity' + itemId).value = quantity;
-                    document.getElementById('item-price-' + itemId).innerText = 'Price: $' + data.item_price.toFixed(2);
-                    document.getElementById('item-subtotal-' + itemId).innerText = 'Subtotal: $' + data.item_total.toFixed(2);
-                    updateCartSummary(data.cart_total, data.total_items);
-                } else {
-                    Swal.fire('Error!', data.message || 'There was a problem updating the item quantity.', 'error');
-                }
-            });
-        }
-
-        function incrementQuantity(itemId, stock) {
-            let quantityInput = document.getElementById('quantity' + itemId);
-            let currentQuantity = parseInt(quantityInput.value);
-            if (currentQuantity < stock) {
-                updateQuantity(itemId, currentQuantity + 1, stock);
+        function incrementQuantity(itemId, maxStock) {
+            let input = document.getElementById('quantity' + itemId);
+            let currentQuantity = parseInt(input.value);
+            if (currentQuantity < maxStock) {
+                input.value = currentQuantity + 1;
+                updateItemSubtotal(itemId);
+                updateCartSummary();
             }
         }
 
-        function decrementQuantity(itemId, stock) {
-            let quantityInput = document.getElementById('quantity' + itemId);
-            let currentQuantity = parseInt(quantityInput.value);
+        function decrementQuantity(itemId, maxStock) {
+            let input = document.getElementById('quantity' + itemId);
+            let currentQuantity = parseInt(input.value);
             if (currentQuantity > 1) {
-                updateQuantity(itemId, currentQuantity - 1, stock);
+                input.value = currentQuantity - 1;
+                updateItemSubtotal(itemId);
+                updateCartSummary();
             }
         }
 
-        function updateCartSummary(total, itemCount) {
-            document.getElementById('cart-total-items').innerText = itemCount;
-            document.getElementById('cart-total-price').innerText = total.toFixed(2);
+        function updateItemSubtotal(itemId) {
+            let input = document.getElementById('quantity' + itemId);
+            let currentQuantity = parseInt(input.value);
+            let itemPrice = parseFloat(document.getElementById('item-price-' + itemId).innerText.replace('Price: $', ''));
+            let itemSubtotal = currentQuantity * itemPrice;
+            document.getElementById('item-subtotal-' + itemId).innerText = 'Subtotal: $' + itemSubtotal.toFixed(2);
+        }
+
+        function updateCartSummary() {
+            let totalItems = 0;
+            let totalPrice = 0;
+            {% for item in cart_items %}
+                let itemId = {{ item.id }};
+                let input = document.getElementById('quantity' + itemId);
+                let currentQuantity = parseInt(input.value);
+                let itemPrice = parseFloat(document.getElementById('item-price-' + itemId).innerText.replace('Price: $', ''));
+                let itemSubtotal = currentQuantity * itemPrice;
+                totalItems += currentQuantity;
+                totalPrice += itemSubtotal;
+            {% endfor %}
+            document.getElementById('cart-total-items').innerText = totalItems;
+            document.getElementById('cart-total-price').innerText = totalPrice.toFixed(2);
         }
     </script>
 </body>

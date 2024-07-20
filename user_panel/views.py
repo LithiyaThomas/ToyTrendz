@@ -4,8 +4,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Prefetch, Q
 from product.models import Product, Category, Rating, ProductVariant, ProductVariantImage
 from .forms import RatingForm
-
-
+from django.views.generic import TemplateView
+from accounts.models import Address
 
 class UserPanelProductListView(ListView):
     model = Product
@@ -134,3 +134,17 @@ class AddRatingView(LoginRequiredMixin, View):
             return redirect('user_panel:product_detail', pk=product_id)
         else:
             return redirect('user_panel:user_products')
+
+
+class UserProfile(LoginRequiredMixin, TemplateView):
+    template_name = 'userside/user_profile.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+
+        profiles = Address.objects.filter(user=user)
+
+        context['user'] = user
+        context['profiles'] = profiles
+        return context

@@ -21,9 +21,9 @@
                             <p class="mb-1">Total Price: ${{ order.total_price }}</p>
                         </div>
                         <div>
-                            <a href="{% url 'order_detail' order.uuid %}" class="btn btn-primary btn-sm">View Details</a>
+                            <a href="{% url 'order:order_detail' order.uuid %}" class="btn btn-primary btn-sm">View Details</a>
                             {% if order.status == 'Pending' or order.status == 'Confirmed' %}
-                            <form action="{% url 'cancel_order' order.uuid %}" method="POST" class="d-inline-block">
+                            <form action="{% url 'order:cancel_order' order.uuid %}" method="POST" class="d-inline-block">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-danger btn-sm">Cancel Order</button>
                             </form>

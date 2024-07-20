@@ -25,8 +25,8 @@
                     {% endfor %}
                 </ul>
 
-                {% if order.status in ['Pending', 'Confirmed'] %}
-                <form action="{% url 'cancel_order' order.uuid %}" method="POST" class="mt-4">
+                {% if order.status == 'Pending' or order.status == 'Confirmed' %}
+                <form action="{% url 'order:cancel_order' order.uuid %}" method="POST" class="mt-4">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-danger">Cancel Order</button>
                 </form>
@@ -34,7 +34,7 @@
             </div>
         </div>
 
-        <a href="{% url 'list_orders' %}" class="btn btn-secondary">Back to Orders</a>
+        <a href="{% url 'order:list_orders' %}" class="btn btn-secondary">Back to Orders</a>
     </div>
 
     <!-- Bootstrap JS and dependencies -->

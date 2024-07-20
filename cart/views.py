@@ -18,30 +18,29 @@ import json
 def add_to_cart(request):
     if request.method == "POST":
         try:
-            # Retrieve data from POST request
-            product_id = request.POST.get("product")
-            variant_id = request.POST.get("variant")
-            quantity = int(request.POST.get("quantity", 1))
+            # Check if the request is JSON or form data
+            if request.content_type == 'application/json':
+                data = json.loads(request.body)
+            else:
+                data = request.POST
 
-            # Validate variant_id
-            if not variant_id:
-                return JsonResponse({"error": "Variant ID is required"}, status=400)
+            product_id = data.get("product")
+            variant_id = data.get("variant")
+            quantity = int(data.get("quantity", 1))
 
-            # Retrieve user and product variant objects
+            if not product_id or not variant_id:
+                return JsonResponse({"error": "Product and Variant IDs are required"}, status=400)
+
             user = request.user
             product = get_object_or_404(Product, id=product_id)
             variant = get_object_or_404(ProductVariant, id=variant_id)
 
-            # Check if requested quantity exceeds available stock
             if quantity > variant.variant_stock:
                 return JsonResponse({"error": "Not enough stock available"}, status=400)
 
-            # Process cart operations within a transaction
             with transaction.atomic():
-                # Get or create user's cart
                 cart, _ = Cart.objects.get_or_create(user=user)
 
-                # Create or update cart item
                 cart_item, created = CartItem.objects.get_or_create(
                     cart=cart,
                     product=product,
@@ -49,33 +48,34 @@ def add_to_cart(request):
                     defaults={"quantity": quantity},
                 )
 
-                # If the cart item already exists, update the quantity
                 if not created:
                     if cart_item.quantity + quantity > variant.variant_stock:
                         return JsonResponse({"error": "Not enough stock available"}, status=400)
                     cart_item.quantity += quantity
                     cart_item.save()
 
-                # Calculate total price and apply coupon if applicable
                 total_price = cart.get_total_price()
                 cart.discount_amount, cart.discounted_price = apply_coupon(cart, total_price)
                 cart.save()
 
-                # Return success response with updated cart details
                 return JsonResponse({
                     'success': True,
                     'message': 'Variant added to cart',
-                    'total_price': total_price,
-                    'discount_amount': cart.discount_amount,
-                    'discounted_price': cart.discounted_price
+                    'total_price': float(total_price),
+                    'discount_amount': float(cart.discount_amount),
+                    'discounted_price': float(cart.discounted_price)
                 })
 
-        except Exception as e:
-            # Return error response if any exception occurs
+        except Product.DoesNotExist:
+            return JsonResponse({"error": "Product not found"}, status=404)
+        except ProductVariant.DoesNotExist:
+            return JsonResponse({"error": "Variant not found"}, status=404)
+        except ValueError as e:
             return JsonResponse({"error": str(e)}, status=400)
+        except Exception as e:
+            return JsonResponse({"error": f"An unexpected error occurred: {str(e)}"}, status=500)
 
-    # Return invalid request response for non-POST requests
-    return JsonResponse({'success': False, 'message': 'Invalid request'})
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 
 def apply_coupon(cart, total_price):
@@ -96,7 +96,7 @@ def view_cart(request):
         cart_items = CartItem.objects.filter(cart=cart)
         subtotal = 0
         for item in cart_items:
-            item.total_price = item.quantity * item.variant.product.price
+            item.total_price = item.quantity * item.variant.product.offer_price
             subtotal += item.total_price
 
         # Apply coupon if exists
@@ -122,7 +122,6 @@ def view_cart(request):
         'total': total
     }
     return render(request, 'cart/view_cart.html', context)
-
 
 
 @login_required

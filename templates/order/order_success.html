@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-success text-white text-center py-4">
+                        <i class="bi bi-check-circle-fill" style="font-size: 3rem;"></i>
+                        <h4 class="mt-2 mb-0">Order Confirmation</h4>
+                    </div>
+                    <div class="card-body text-center p-5">
+                        <h2 class="card-title mb-4">Thank You for Your Order!</h2>
+                        <p class="card-text">Your order has been successfully placed and is being processed.</p>
+                        <div class="row mt-4">
+                            <div class="col-sm-6 text-start">
+                                <p><strong>Order ID:</strong> {{ order.uuid }}</p>
+                            </div>
+                            <div class="col-sm-6 text-end">
+                                <p><strong>Date:</strong> {{ order.created_at|date:"F d, Y" }}</p>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h5>Order Summary</h5>
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Quantity</th>
+                                            <th>Price</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in order.items.all %}
+                                        <tr>
+                                            <td>{{ item.product.product_name }}</td>
+                                            <td>{{ item.quantity }}</td>
+                                            <td>${{ item.price }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="2" class="text-end">Total:</th>
+                                            <th>${{ order.total_price }}</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="text-center mt-4">
+                            <a href="{% url 'home' %}" class="btn btn-primary me-2">Continue Shopping</a>
+                            <a href="" class="btn btn-outline-secondary">View Order Details</a>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light text-muted text-center py-3">
+                        <p class="mb-0">Need help? <a href="" class="text-decoration-none">Contact Support</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

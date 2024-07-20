@@ -1,11 +1,10 @@
 from django.db import models
 from django.conf import settings
 from accounts.models import Address
-from product.models import Product
+from product.models import Product, ProductVariant
 import uuid
-
+from decimal import Decimal
 # Create your models here.
-
 class Order(models.Model):
     STATUS_CHOICES = (
         ('Pending', 'Pending'),
@@ -51,17 +50,20 @@ class Order(models.Model):
     def __str__(self):
         return f"Order {self.uuid} - {self.user.username}"
 
+
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)  # Correct reference to Product model
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    variant = models.ForeignKey(ProductVariant, on_delete=models.SET_NULL, null=True, blank=True)
     quantity = models.PositiveIntegerField(default=1)
     price = models.DecimalField(max_digits=10, decimal_places=2)
 
     def get_subtotal(self):
-        return self.quantity * self.price
+        return Decimal(self.product.offer_price) * self.quantity
 
     def __str__(self):
-        return f"{self.quantity} x {self.product.name} in Order {self.order.uuid}"
+        return f"{self.quantity} x {self.product.product_name} in Order {self.order.uuid}"
+
 
 class Payment(models.Model):
     order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='payment')

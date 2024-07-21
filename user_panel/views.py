@@ -8,9 +8,9 @@ from django.views.generic import TemplateView
 from accounts.models import Address
 from django.urls import reverse_lazy
 from django.contrib.auth.views import PasswordChangeView
-from django.contrib.auth.forms import UserChangeForm
+from .forms import SimpleUserChangeForm
 from django.contrib.auth import get_user_model
-
+from django.contrib import messages
 User = get_user_model()
 
 class UserPanelProductListView(ListView):
@@ -167,15 +167,17 @@ class UserProfile(LoginRequiredMixin, TemplateView):
 
 
 
-
 class EditProfileView(LoginRequiredMixin, UpdateView):
-    model = User
-    form_class = UserChangeForm
+    form_class = SimpleUserChangeForm
     template_name = 'userside/edit_profile.html'
     success_url = reverse_lazy('user_panel:user_profile')
 
     def get_object(self):
         return self.request.user
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Profile updated successfully.')
+        return super().form_valid(form)
 
 class ChangePasswordView(LoginRequiredMixin, PasswordChangeView):
     template_name = 'userside/change_password.html'

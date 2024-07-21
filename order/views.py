@@ -60,11 +60,11 @@ def cancel_order(request, order_uuid):
                         transaction_id=f"REFUND-{order.uuid}"
                     )
                 messages.success(request, "Order cancelled successfully.")
-            return redirect('list_orders')
+            return redirect('order:list_orders')
         else:
             messages.error(request, "Cannot cancel this order.")
 
-    return redirect('order_detail', order_uuid=order.uuid)
+    return redirect('order:order_detail', order_uuid=order.uuid)
 
 @login_required
 def proceed_to_payment(request):

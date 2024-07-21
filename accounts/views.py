@@ -161,7 +161,7 @@ def create_address(request):
             if next_url:
                 return redirect(next_url)
             else:
-                return redirect('home')
+                return redirect('user_panel:user_profile')
     else:
         form = AddressForm()
 
@@ -183,7 +183,7 @@ def edit_address(request, address_id):
             if next_url:
                 return redirect(next_url)
             else:
-                return redirect('home')
+                return redirect('user_panel:user_profile')
     else:
         form = AddressForm(instance=address)
 
@@ -195,7 +195,7 @@ def delete_address(request, address_id):
 
     if request.method == 'POST':
         address.delete()
-        return redirect('home')
+        return redirect('user_panel:user_profile')
 
     return render(request, 'accounts/delete_address.html', {'address': address})
 
@@ -223,29 +223,29 @@ def select_address(request):
             messages.error(request, 'Selected address does not exist.')
             return redirect(reverse('select_address'))  # Adjust the URL name as per your project
 
-# def accounts_product_search(request):
-#     query = request.GET.get('q')
-#     category_id = request.GET.get('category')
-#
-#     products = Product.objects.all().select_related('product_category', 'product_brand')
-#
-#     if query:
-#         products = products.filter(
-#             Q(product_name__icontains=query) |
-#             Q(product_description__icontains=query)
-#         )
-#
-#     if category_id:
-#         products = products.filter(product_category_id=category_id)
-#
-#     categories = Category.objects.all()
-#
-#     context = {
-#         'products': products,
-#         'categories': categories,
-#         'query': query,
-#         'selected_category': category_id
-#     }
-#
-#
-#     return render(request, 'userside/product_list.html', context)
+def accounts_product_search(request):
+    query = request.GET.get('q')
+    category_id = request.GET.get('category')
+
+    products = Product.objects.all().select_related('product_category', 'product_brand')
+
+    if query:
+        products = products.filter(
+            Q(product_name__icontains=query) |
+            Q(product_description__icontains=query)
+        )
+
+    if category_id:
+        products = products.filter(product_category_id=category_id)
+
+    categories = Category.objects.all()
+
+    context = {
+        'products': products,
+        'categories': categories,
+        'query': query,
+        'selected_category': category_id
+    }
+
+
+    return render(request, 'userside/product_list.html', context)

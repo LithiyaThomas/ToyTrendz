@@ -12,5 +12,5 @@ urlpatterns = [
     path('address/edit/<int:address_id>/', views.edit_address, name='edit_address'),
     path('address/delete/<int:address_id>/', views.delete_address, name='delete_address'),
     path('address/select/', views.select_address, name='select_address'),
-
+    path('search/', views.accounts_product_search, name='accounts_product_search'),
 ]

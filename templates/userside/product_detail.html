@@ -10,6 +10,41 @@
         .bg-hopscotch { background-color: #ff69b4; }
         .btn-hopscotch { background-color: #ff69b4; border-color: #ff69b4; }
         .btn-hopscotch:hover { background-color: #ff4da6; border-color: #ff4da6; }
+        header {
+    background-color: #ff69b4;
+    padding: 10px 0;
+}
+
+header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 28px;
+    color: white;
+}
+
+header .icons {
+    display: flex;
+    align-items: center;
+}
+
+header .icon {
+    color: white;
+    font-size: 20px;
+    margin-left: 20px;
+    text-decoration: none;
+}
+
+header .icon:hover {
+    color: #f0f0f0;
+}
 
         .nav-link-spacing {
     margin-right: 15px; /* Adjust the spacing as needed */
@@ -160,23 +195,18 @@
 </head>
 
 <body>
-   <header class="bg-hopscotch text-white py-3">
+   <header>
     <div class="container">
-        <div class="row align-items-center">
-            <div class="col-auto">
-                <h1 class="h4 mb-0">COZY CRIBS</h1>
-            </div>
-            <div class="col d-flex justify-content-end align-items-center">
-                <span class="discover text-white text-decoration-none">Discover</span>
-                <span class="mx-2"></span>
-                <span class="all text-white text-decoration-none mx-3">All</span>
-                <span class="mx-2"></span>
-                <span class="moments text-white text-decoration-none mx-3">Moments</span>
-                <span class="mx-2"></span>
-                <span class="blog text-white text-decoration-none mx-3">Blog</span>
-                <span class="mx-2"></span>
-                <a href="#" class="text-white text-decoration-none ml-3">24x7 Customer care</a>
-            </div>
+        <h1>COZY CRIBS</h1>
+        <div class="icons">
+            <a href="#" class="icon"><i class="fas fa-heart"></i></a>
+            <a href="{% url 'cart:view_cart' %}" class="icon"><i class="fas fa-shopping-bag"></i></a>
+            {% if not user.is_authenticated %}
+                <a href="{% url 'user_login' %}" class="icon"><i class="fas fa-user"></i></a>
+            {% else %}
+                <a href="{% url 'user_logout' %}" class="icon"><i class="fas fa-sign-out-alt"></i></a>
+                <a href="{% url 'user_panel:user_profile' %}" class="icon"><i class="fas fa-user-circle"></i></a>
+            {% endif %}
         </div>
     </div>
 </header>

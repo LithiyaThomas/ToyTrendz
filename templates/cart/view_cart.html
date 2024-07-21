@@ -94,7 +94,7 @@
                         <div class="col-8">
                             <div class="card-body">
                                 <h5 class="card-title fs-6">{{ item.variant.product.product_name }}</h5>
-                                <p class="card-text small">Variant: {{ item.variant.colour_name }}</p>
+                                <p class="card-text small">Colour: {{ item.variant.colour_name }}</p>
                                 <p class="card-text small" id="item-price-{{ item.id }}">Price: ${{ item.variant.product.price }}</p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div class="d-flex align-items-center">
@@ -250,40 +250,61 @@
         });
     }
 
-    function confirmRemove(itemId) {
-        Swal.fire({
-            title: 'Are you sure?',
-            text: 'You will not be able to recover this item!',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, remove it!',
-            cancelButtonText: 'No, keep it'
-        }).then(result => {
-            if (result.isConfirmed) {
-                fetch(`/cart/remove_item/${itemId}/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('cart-item-' + itemId).remove();
-                        document.getElementById('cart-total-price').textContent = data.cart_total.toFixed(2);
-                        document.getElementById('cart-total-items').textContent = data.total_items;
-                        Swal.fire('Removed!', 'The item has been removed from your cart.', 'success');
-                    } else {
-                        Swal.fire('Error', data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    Swal.fire('Error', 'An error occurred while removing the item.', 'error');
-                });
+   function confirmRemove(itemId) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: 'You will not be able to recover this item!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, remove it!',
+        cancelButtonText: 'No, keep it'
+    }).then(result => {
+        if (result.isConfirmed) {
+            fetch(`/cart/remove/${itemId}/`, {  // Updated URL
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('cart-item-' + itemId).remove();
+                    document.getElementById('cart-total-price').textContent = data.cart_total.toFixed(2);
+                    document.getElementById('cart-total-items').textContent = data.total_items;
+                    Swal.fire('Removed!', 'The item has been removed from your cart.', 'success');
+                } else {
+                    throw new Error(data.error || 'Unknown error occurred');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('Error', 'An error occurred while removing the item: ' + error.message, 'error');
+            });
+        }
+    });
+}
+// Make sure you have this function to get the CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
-        });
+        }
     }
+    return cookieValue;
+}
 </script>
 
 </body>

@@ -215,11 +215,11 @@ header .navigation a:hover {
 
     <div class="container">
         <div class="sidebar">
-            <form method="GET" action="{% url 'user_panel:user_products' %}">
-                <div class="form-group">
-                    <label for="search">Search Products</label>
-                    <input type="text" name="q" id="search" class="form-control" placeholder="Search products" value="{{ request.GET.q }}">
-                </div>
+           <form method="GET" action="{% url 'user_panel:user_products' %}" id="product-search-form">
+    <div class="form-group">
+        <label for="search">Search Products</label>
+        <input type="text" name="q" id="search" class="form-control" placeholder="Search products" value="{{ search_query }}">
+    </div>
                 <div class="form-group">
                     <label for="category">Category</label>
                     <select name="category" id="category" class="form-control">
@@ -230,37 +230,31 @@ header .navigation a:hover {
                     </select>
                 </div>
                 <div class="form-group sort-by-container">
-                    <label for="sort_by">Sort By</label>
-                    <ul class="sort-by-options" id="sort_by">
-                        <li>
-                            <label><input type="checkbox" name="sort_by" value="popularity" {% if sort_by == 'popularity' %}checked{% endif %}> Popularity</label>
-                        </li>
-                        <li>
-                            <label><input type="checkbox" name="sort_by" value="price_low_high" {% if sort_by == 'price_low_high' %}checked{% endif %}> Price: Low to High</label>
-                        </li>
-                        <li>
-                            <label><input type="checkbox" name="sort_by" value="price_high_low" {% if sort_by == 'price_high_low' %}checked{% endif %}> Price: High to Low</label>
-                        </li>
-                        <li>
-                            <label><input type="checkbox" name="sort_by" value="average_ratings" {% if sort_by == 'average_ratings' %}checked{% endif %}> Average Ratings</label>
-                        </li>
-                        <li>
-                            <label><input type="checkbox" name="sort_by" value="featured" {% if sort_by == 'featured' %}checked{% endif %}> Featured</label>
-                        </li>
-                        <li>
-                            <label><input type="checkbox" name="sort_by" value="new_arrivals" {% if sort_by == 'new_arrivals' %}checked{% endif %}> New Arrivals</label>
-                        </li>
-                        <li>
-                            <label><input type="checkbox" name="sort_by" value="a_to_z" {% if sort_by == 'a_to_z' %}checked{% endif %}> A-Z</label>
-                        </li>
-                        <li>
-                            <label><input type="checkbox" name="sort_by" value="z_to_a" {% if sort_by == 'z_to_a' %}checked{% endif %}> Z-A</label>
-                        </li>
-                        <li>
-                            <label><input type="checkbox" name="sort_by" value="color" {% if sort_by == 'color' %}checked{% endif %}> Color</label>
-                        </li>
-                    </ul>
-                </div>
+    <label for="sort_by">Sort By</label>
+    <ul class="sort-by-options" id="sort_by">
+        <li>
+            <label><input type="checkbox" name="sort_by" value="popularity" {% if sort_by == 'popularity' %}checked{% endif %}> Popularity</label>
+        </li>
+        <li>
+            <label><input type="checkbox" name="sort_by" value="price_low_high" {% if sort_by == 'price_low_high' %}checked{% endif %}> Price: Low to High</label>
+        </li>
+        <li>
+            <label><input type="checkbox" name="sort_by" value="price_high_low" {% if sort_by == 'price_high_low' %}checked{% endif %}> Price: High to Low</label>
+        </li>
+        <li>
+            <label><input type="checkbox" name="sort_by" value="average_ratings" {% if sort_by == 'average_ratings' %}checked{% endif %}> Average Ratings</label>
+        </li>
+        <li>
+            <label><input type="checkbox" name="sort_by" value="new_arrivals" {% if sort_by == 'new_arrivals' %}checked{% endif %}> New Arrivals</label>
+        </li>
+        <li>
+            <label><input type="checkbox" name="sort_by" value="a_to_z" {% if sort_by == 'a_to_z' %}checked{% endif %}> A-Z</label>
+        </li>
+        <li>
+            <label><input type="checkbox" name="sort_by" value="z_to_a" {% if sort_by == 'z_to_a' %}checked{% endif %}> Z-A</label>
+        </li>
+    </ul>
+</div>
                 <button type="submit" class="btn btn-primary">Search</button>
             </form>
         </div>
@@ -284,5 +278,17 @@ header .navigation a:hover {
             {% endfor %}
         </div>
     </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var form = document.getElementById('product-search-form');
+    var searchInput = document.getElementById('search');
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        form.submit();
+        searchInput.value = '';
+    });
+});
+</script>
 </body>
 </html>

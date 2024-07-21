@@ -126,9 +126,22 @@
             display: flex;
             gap: 5px;
         }
-        .zoomWindowContainer {
-            z-index: 9999;
-        }
+        .zoom-container {
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+    height: 400px; /* Adjust this to match your main image container height */
+}
+
+.zoom-container img {
+    transition: transform 0.3s ease;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
         .variant-circle.selected {
             box-shadow: 0 0 0 2px #ed54a4;
         }
@@ -368,15 +381,6 @@ function updateMainImage(imageUrl) {
     var mainImage = document.getElementById('zoom_mw');
     mainImage.src = imageUrl;
     mainImage.setAttribute('data-zoom-image', imageUrl);
-
-    // Reinitialize elevateZoom plugin after updating the image
-    $('#zoom_mw').elevateZoom({
-        zoomType: "lens",
-        lensShape: "round",
-        lensSize: 200,
-        borderSize: 1,
-        borderColour: "#ccc"
-    });
 }
 
 function filterImages(color) {
@@ -396,13 +400,43 @@ function filterImages(color) {
     }
 }
 
-// Call this function on page load to set initial state
 document.addEventListener('DOMContentLoaded', () => {
     const checkedVariant = document.querySelector('input[name="variant"]:checked');
     if (checkedVariant) {
         filterImages(checkedVariant.dataset.color);
     }
+
+    // Enhanced zoom functionality
+    const mainImage = document.getElementById('zoom_mw');
+    const zoomContainer = document.createElement('div');
+    zoomContainer.className = 'zoom-container';
+    mainImage.parentElement.insertBefore(zoomContainer, mainImage);
+    zoomContainer.appendChild(mainImage);
+
+    const zoomLevel = 3; // Adjust this value to increase/decrease zoom level
+
+    zoomContainer.addEventListener('mousemove', function(e) {
+        const bounds = this.getBoundingClientRect();
+        const x = e.clientX - bounds.left;
+        const y = e.clientY - bounds.top;
+
+        const xPercent = Math.max(0, Math.min(100, (x / bounds.width) * 100));
+        const yPercent = Math.max(0, Math.min(100, (y / bounds.height) * 100));
+
+        mainImage.style.transformOrigin = `${xPercent}% ${yPercent}%`;
+    });
+
+    zoomContainer.addEventListener('mouseenter', function() {
+        mainImage.style.transform = `scale(${zoomLevel})`;
+    });
+
+    zoomContainer.addEventListener('mouseleave', function() {
+        mainImage.style.transform = 'scale(1)';
+    });
 });
+
+
+
 </script>
 
 

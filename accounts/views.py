@@ -13,6 +13,8 @@ from .forms import AddressForm
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.contrib.auth import logout
+from product.models import Product, Category
+from django.db.models import Q
 # Generate a random OTP
 def generate_otp():
     return random.randint(100000, 999999)
@@ -221,4 +223,29 @@ def select_address(request):
             messages.error(request, 'Selected address does not exist.')
             return redirect(reverse('select_address'))  # Adjust the URL name as per your project
 
-
+# def accounts_product_search(request):
+#     query = request.GET.get('q')
+#     category_id = request.GET.get('category')
+#
+#     products = Product.objects.all().select_related('product_category', 'product_brand')
+#
+#     if query:
+#         products = products.filter(
+#             Q(product_name__icontains=query) |
+#             Q(product_description__icontains=query)
+#         )
+#
+#     if category_id:
+#         products = products.filter(product_category_id=category_id)
+#
+#     categories = Category.objects.all()
+#
+#     context = {
+#         'products': products,
+#         'categories': categories,
+#         'query': query,
+#         'selected_category': category_id
+#     }
+#
+#
+#     return render(request, 'userside/product_list.html', context)

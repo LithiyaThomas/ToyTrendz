@@ -7,46 +7,49 @@ from .forms import RatingForm
 from django.views.generic import TemplateView
 from accounts.models import Address
 
+
 class UserPanelProductListView(ListView):
     model = Product
     template_name = 'userside/product_list.html'
     context_object_name = 'products'
+    paginate_by = 12  # Adjust this number as needed
 
     def get_queryset(self):
         queryset = Product.objects.all().select_related('product_category', 'product_brand') \
             .prefetch_related(
-                Prefetch('productvariant_set', queryset=ProductVariant.objects.prefetch_related('productvariantimage_set'))
-            )
+            Prefetch('productvariant_set',
+                     queryset=ProductVariant.objects.prefetch_related('productvariantimage_set'))
+        )
 
         query = self.request.GET.get('q')
         category_id = self.request.GET.get('category')
         sort_by = self.request.GET.get('sort_by')
 
         if query:
-            queryset = queryset.filter(Q(product_name__icontains=query) | Q(product_description__icontains=query))
+            queryset = queryset.filter(
+                Q(product_name__icontains=query) |
+                Q(product_description__icontains=query)
+            )
 
         if category_id:
             queryset = queryset.filter(product_category_id=category_id)
 
         if sort_by:
             if sort_by == 'popularity':
-                queryset = queryset.order_by('-popularity')  # Assuming you have a popularity field
+                queryset = queryset.order_by('-total_reviews')
             elif sort_by == 'price_low_high':
                 queryset = queryset.order_by('price')
             elif sort_by == 'price_high_low':
                 queryset = queryset.order_by('-price')
             elif sort_by == 'average_ratings':
-                queryset = queryset.order_by('-average_ratings')  # Assuming you have an average_ratings field
-            elif sort_by == 'featured':
-                queryset = queryset.order_by('-featured')  # Assuming you have a featured field
+                queryset = queryset.order_by('-average_rating')
             elif sort_by == 'new_arrivals':
-                queryset = queryset.order_by('-created_at')  # Assuming you have a created_at field for new arrivals
+                queryset = queryset.order_by('-created_at')
             elif sort_by == 'a_to_z':
                 queryset = queryset.order_by('product_name')
             elif sort_by == 'z_to_a':
                 queryset = queryset.order_by('-product_name')
-            elif sort_by == 'color':
-                queryset = queryset.order_by('productvariant_set__colour_name')
+            # 'featured' and 'color' options removed
 
         return queryset
 
@@ -54,9 +57,16 @@ class UserPanelProductListView(ListView):
         context = super().get_context_data(**kwargs)
         context['categories'] = Category.objects.all()
         context['sort_by'] = self.request.GET.get('sort_by', '')
+        context['search_query'] = self.request.GET.get('q', '')  # Add this line
+
+        # Add query parameters to context for maintaining state in pagination
+        context['query_params'] = self.request.GET.copy()
+        if 'page' in context['query_params']:
+            del context['query_params']['page']
+        if 'q' in context['query_params']:  # Add this block
+            del context['query_params']['q']
+
         return context
-
-
 
 class ProductDetailView(DetailView):
     model = Product

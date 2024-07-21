@@ -1,4 +1,4 @@
-from django.views.generic import ListView, DetailView, View
+from django.views.generic import ListView, DetailView, View,UpdateView
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Prefetch, Q
@@ -6,7 +6,12 @@ from product.models import Product, Category, Rating, ProductVariant, ProductVar
 from .forms import RatingForm
 from django.views.generic import TemplateView
 from accounts.models import Address
+from django.urls import reverse_lazy
+from django.contrib.auth.views import PasswordChangeView
+from django.contrib.auth.forms import UserChangeForm
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 
 class UserPanelProductListView(ListView):
     model = Product
@@ -158,3 +163,20 @@ class UserProfile(LoginRequiredMixin, TemplateView):
         context['user'] = user
         context['profiles'] = profiles
         return context
+
+
+
+
+
+class EditProfileView(LoginRequiredMixin, UpdateView):
+    model = User
+    form_class = UserChangeForm
+    template_name = 'userside/edit_profile.html'
+    success_url = reverse_lazy('user_panel:user_profile')
+
+    def get_object(self):
+        return self.request.user
+
+class ChangePasswordView(LoginRequiredMixin, PasswordChangeView):
+    template_name = 'userside/change_password.html'
+    success_url = reverse_lazy('user_panel:user_profile')

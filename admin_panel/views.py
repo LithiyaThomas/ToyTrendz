@@ -6,7 +6,9 @@ from .forms import AdminLoginForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login
 from django.contrib.auth.decorators import login_required
-
+from order.models import Order, OrderItem
+from .forms import OrderStatusForm
+from django.contrib.auth.decorators import user_passes_test
 
 def admin_login(request):
     if request.method == 'POST':
@@ -76,3 +78,33 @@ def admin_logout(request):
         del request.session['is_admin']
         messages.success(request, 'You have been logged out successfully.')
     return redirect('admin-login')
+
+
+def is_admin(user):
+    return user.is_superuser
+
+@user_passes_test(is_admin)
+def order_list(request):
+    orders = Order.objects.all().order_by('-created_at')
+    return render(request, 'adminside/order_list.html', {'orders': orders})
+
+@user_passes_test(is_admin)
+def update_order_status(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    if request.method == 'POST':
+        form = OrderStatusForm(request.POST, instance=order)
+        if form.is_valid():
+            form.save()
+            return redirect('admin_order_list')
+    else:
+        form = OrderStatusForm(instance=order)
+    return render(request, 'adminside/update_order_status.html', {'form': form, 'order': order})
+
+@user_passes_test(is_admin)
+def cancel_order(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    if request.method == 'POST':
+        order.status = 'Cancelled'
+        order.save()
+        return redirect('admin_order_list')
+    return render(request, 'adminside/cancel_order.html', {'order': order})

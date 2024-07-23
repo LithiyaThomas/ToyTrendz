@@ -1,153 +1,39 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Product Variants</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f8f8f8;
-            margin: 0;
-            padding: 20px;
-            display: flex; /* Use flexbox for layout */
-        }
-        .sidebar {
-            width: 250px;
-            background-color: #f8f9fa;
-            height: 100vh;
-            border-right: 1px solid #ddd;
-            padding-top: 20px;
-            position: fixed;
-        }
-        .sidebar h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .sidebar a {
-            display: block;
-            padding: 10px 15px;
-            text-decoration: none;
-            color: #000;
-            font-size: 18px;
-            transition: background-color 0.3s ease;
-        }
-        .sidebar a:hover {
-            background-color: #007bff;
-            color: #fff;
-        }
-        .sidebar a.active {
-            background-color: #e7e9fc;
-            color: #000;
-        }
-        .main-content {
-            margin-left: 250px; /* Ensure main content starts after the sidebar */
-            padding: 20px;
-            max-width: 800px; /* Limit content width */
-        }
-        h1 {
-            color: #333;
-            margin: 0;
-            font-size: 1.8em;
-        }
-        a {
-            text-decoration: none;
-            color: #007BFF;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        .variant {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .variant h1 {
-            font-size: 1.8em;
-            margin: 0;
-        }
-        .add-variant {
-            display: inline-block;
-            padding: 10px 25px;
-            background-color: #28a745;
-            color: #fff;
-            border-radius: 5px;
-            font-size: 1em;
-            transition: background-color 0.3s ease;
-        }
-        .add-variant:hover {
-            background-color: #218838;
-        }
-        .variant-table {
-            width: 100%;
-            border-collapse: collapse;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            background-color: #fff;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        .variant-table th, .variant-table td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        .variant-table th {
-            background-color: #f8f8f8;
-            font-weight: bold;
-        }
-        .variant-table td {
-            background-color: #fff;
-        }
-        .box {
-            width: 50px;
-            height: 50px;
-            border: 1px solid #000;
-            border-radius: 50%;
-        }
-        .action-buttons {
-            white-space: nowrap;
-        }
-        .action-buttons a {
-            margin-right: 10px;
-            color: #FF0000;
-        }
-        .back-link {
-            display: block;
-            text-align: center;
-            margin-top: 20px;
-        }
-        .images img {
-            width: 50px;
-            height: 50px;
-            margin-right: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-    </style>
-</head>
-<body>
-    <div class="sidebar">
-        <h2>Dashboard</h2>
-         <a href="{% url 'user_data' %}">Users</a>
-        <a href="{% url 'category:category_list' %}">Categories</a>
-        <a href="{% url 'brand:brand_list' %}">Brands</a>
-        <a href="{% url 'product:product_list' %}">Products</a>
-        <a href="{% url 'admin_order_list' %}">Orders</a>
+{% extends 'adminside/base.html' %}
 
+{% load static %}
+
+{% block title %}Variants{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+<style>
+    .variant-table { box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+    .variant-table th { background-color: #f8f9fa; }
+    .variant-table td, .variant-table th { vertical-align: middle; }
+    .color-box { width: 30px; height: 30px; border-radius: 50%; display: inline-block; }
+    .action-btn { margin: 0 5px; }
+    .variant-image { cursor: pointer; transition: transform 0.3s; }
+    .variant-image:hover { transform: scale(1.1); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-content container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Variants for {{ product.product_name }}</h1>
+        <a href="{% url 'product:product_variant_create' product.pk %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add Variant
+        </a>
     </div>
-     <div class="main-content">
-        <div class="variant">
-            <h1>Variants for {{ product.product_name }}</h1>
-            <a href="{% url 'product:product_variant_create' product.pk %}" class="add-variant">Add Variant</a>
-        </div>
 
-        <table class="variant-table">
+    <div class="table-responsive">
+        <table class="table table-hover variant-table">
             <thead>
                 <tr>
                     <th>Variant</th>
-                    <th>Colour Name</th>
-                    <th>Variant Stock</th>
-                    <th>Variant Status</th>
                     <th>Colour</th>
+                    <th>Stock</th>
+                    <th>Status</th>
                     <th>Images</th>
                     <th>Actions</th>
                 </tr>
@@ -156,36 +42,115 @@
                 {% for variant in variants %}
                     <tr>
                         <td>{{ variant.product }}</td>
-                        <td>{{ variant.colour_name }}</td>
+                        <td>
+                            <span class="color-box" style="background-color: {{ variant.colour_code }};" title="{{ variant.colour_name }}"></span>
+                            {{ variant.colour_name }}
+                        </td>
                         <td>{{ variant.variant_stock }}</td>
-                        <td>{{ variant.variant_status }}</td>
-                        <td><div class="box" style="background-color: {{ variant.colour_code }};"></div></td>
-                     <td class="images">
-    {% for image in variant.productvariantimage_set.all %}
-        <img src="{{ image.image.url }}" alt="Variant Image">
-    {% empty %}
-        <p>No images found.</p>
-    {% endfor %}
-</td>
-
-
-                        <td class="action-buttons">
-                            <a href="{% url 'product:edit_variant' pk=variant.pk %}">Edit</a>
-                            <a href="{% url 'product:add_variant_image' pk=variant.pk %}" class="add-image">Add Image</a>
-                             <a href="{% url 'product:product_variant_delete' pk=variant.pk %}">
-                                {% if variant.variant_status %}
-                                    Deactivate
-                                {% else %}
-                                    Activate
-                                {% endif %}
+                        <td>
+                                <span class="badge {% if variant.is_active %}bg-success{% else %}bg-danger{% endif %}">
+        {{ variant.is_active|yesno:"Active,Inactive" }}
+    </span>
+                        </td>
+                        <td>
+                            {% for image in variant.productvariantimage_set.all|slice:":3" %}
+                                <img src="{{ image.image.url }}" alt="Variant Image" class="variant-image" width="50" height="50" data-toggle="modal" data-target="#imageModal{{ forloop.parentloop.counter }}{{ forloop.counter }}">
+                            {% empty %}
+                                <span class="text-muted">No images</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            <a href="{% url 'product:edit_variant' pk=variant.pk %}" class="btn btn-sm btn-warning action-btn" title="Edit">
+                                <i class="fas fa-edit"></i>
                             </a>
+                            <a href="{% url 'product:add_variant_image' pk=variant.pk %}" class="btn btn-sm btn-info action-btn" title="Add Image">
+                                <i class="fas fa-image"></i>
+                            </a>
+                           <button
+        class="btn btn-sm {% if variant.is_active %}btn-danger{% else %}btn-success{% endif %} action-btn"
+        data-variant-id="{{ variant.pk }}"
+        onclick="confirmToggleStatus({{ variant.pk }}, '{% url 'product:toggle_variant_status' pk=variant.pk %}')"
+        title="{% if variant.is_active %}Deactivate{% else %}Activate{% endif %}">
+        <i class="fas {% if variant.is_active %}fa-toggle-off{% else %}fa-toggle-on{% endif %}"></i>
+    </button>
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
-
-        <a href="{% url 'product:product_list' %}" class="back-link">Back to Product List</a>
     </div>
-</body>
-</html>
+
+    <a href="{% url 'product:product_list' %}" class="btn btn-secondary mt-3">
+        <i class="fas fa-arrow-left"></i> Back to Product List
+    </a>
+</div>
+
+<!-- Image Modal -->
+{% for variant in variants %}
+    {% for image in variant.productvariantimage_set.all %}
+        <div class="modal fade" id="imageModal{{ forloop.parentloop.counter }}{{ forloop.counter }}" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <img src="{{ image.image.url }}" alt="Variant Image" class="img-fluid">
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmToggleStatus(variantId, url) {
+    console.log('Function called for variant:', variantId);
+    if (confirm('Are you sure you want to change the status of this variant?')) {
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ 'variantId': variantId })
+        })
+        .then(response => {
+            console.log('Response received:', response);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Data received:', data);
+            if (data.status !== undefined) {
+                let button = document.querySelector(`button[data-variant-id="${variantId}"]`);
+                let statusBadge = button.closest('tr').querySelector('.badge');
+                if (data.status) {
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-danger');
+                    button.title = 'Deactivate';
+                    button.innerHTML = '<i class="fas fa-toggle-off"></i>';
+                    statusBadge.classList.remove('bg-danger');
+                    statusBadge.classList.add('bg-success');
+                    statusBadge.textContent = 'Active';
+                } else {
+                    button.classList.remove('btn-danger');
+                    button.classList.add('btn-success');
+                    button.title = 'Activate';
+                    button.innerHTML = '<i class="fas fa-toggle-on"></i>';
+                    statusBadge.classList.remove('bg-success');
+                    statusBadge.classList.add('bg-danger');
+                    statusBadge.textContent = 'Inactive';
+                }
+            } else {
+                throw new Error('Status not found in response');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        });
+    }
+}</script>
+{% endblock %}

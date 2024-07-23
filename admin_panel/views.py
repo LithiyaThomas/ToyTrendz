@@ -10,18 +10,19 @@ from order.models import Order, OrderItem
 from .forms import OrderStatusForm
 from django.contrib.auth.decorators import user_passes_test
 
+
 def admin_login(request):
     if request.method == 'POST':
         form = AdminLoginForm(request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
             password = form.cleaned_data['password']
-            user = authenticate(request, username=email, password=password)  # Use 'username=email'
+            user = authenticate(request, username=email, password=password)
             if user is not None:
                 if user.is_admin:
-                    auth_login(request, user)  # Log the admin in
-                    request.session['is_admin'] = True  # Set session variable
-                    return redirect('admin-dashboard')  # Redirect to the admin dashboard
+                    auth_login(request, user)
+                    request.session['is_admin'] = True
+                    return redirect('admin-dashboard')
                 else:
                     messages.error(request, 'You are not authorized to access this page.')
             else:
@@ -32,14 +33,14 @@ def admin_login(request):
     return render(request, 'adminside/admin_login.html', {'form': form})
 
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
-@login_required
+@login_required(login_url='admin-login')
 def admin_dashboard(request):
     if not request.session.get('is_admin'):
         return redirect('admin-login')
     return render(request, 'adminside/dashboard.html')
 
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
-@login_required
+@login_required(login_url='admin-login')
 def user_data(request):
     if not request.session.get('is_admin'):
         return redirect('admin-login')
@@ -48,7 +49,7 @@ def user_data(request):
     return render(request, 'adminside/user_data.html', {'users': users})
 
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
-@login_required
+@login_required(login_url='admin-login')
 def block_user(request, user_id):
     if not request.session.get('is_admin'):
         return redirect('admin-login')
@@ -84,6 +85,7 @@ def is_admin(user):
     return user.is_superuser
 
 @user_passes_test(is_admin)
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def order_list(request):
     orders = Order.objects.all().order_by('-created_at')
     return render(request, 'adminside/order_list.html', {'orders': orders})

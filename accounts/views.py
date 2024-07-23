@@ -46,7 +46,7 @@ def user_register(request):
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            user.is_active = False  # Deactivate account until it is confirmed
+            user.is_active = False
 
             otp = generate_otp()
             send_mail(
@@ -60,7 +60,7 @@ def user_register(request):
             request.session['otp'] = str(otp)
             request.session['user_data'] = form.cleaned_data
             request.session['otp_creation_time'] = timezone.now().isoformat()
-            return redirect('verify_otp')  # Redirect to the OTP verification page
+            return redirect('verify_otp')
         else:
             messages.error(request, 'Registration failed. Please correct the errors below.')
     else:
@@ -92,12 +92,12 @@ def verify_otp(request):
                 email=user_data['email'],
                 password=user_data['password'],
                 phone=user_data['phone'],
-                # Add other fields as necessary
+
             )
             user.is_active = True
             user.save()
 
-            backend = 'accounts.backends.EmailBackend'  # Or whichever backend you prefer
+            backend = 'accounts.backends.EmailBackend'
             user.backend = backend
             login(request, user, backend=backend)
 
@@ -217,11 +217,11 @@ def select_address(request):
         try:
             selected_address = Address.objects.get(id=selected_address_id, user=request.user)
 
-            return redirect(reverse('proceed_to_payment', kwargs={'address_id': selected_address.id}))  # Adjust the URL name as per your project
+            return redirect(reverse('proceed_to_payment', kwargs={'address_id': selected_address.id}))
         except Address.DoesNotExist:
             # Handle case where selected address does not exist for the current user
             messages.error(request, 'Selected address does not exist.')
-            return redirect(reverse('select_address'))  # Adjust the URL name as per your project
+            return redirect(reverse('select_address'))
 
 def accounts_product_search(request):
     query = request.GET.get('q')

@@ -1,56 +1,18 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Add Variant Images</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.6/cropper.css" rel="stylesheet"/>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet"/>
-    <style>
-        .sidebar {
-            width: 250px;
-            background-color: #f8f9fa;
-            height: 100vh;
-            border-right: 1px solid #ddd;
-            padding-top: 20px;
-            position: fixed;
-        }
-        .sidebar h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .sidebar a {
-            display: block;
-            padding: 10px 15px;
-            text-decoration: none;
-            color: #000;
-            font-size: 18px;
-            transition: background-color 0.3s ease;
-        }
-        .sidebar a:hover {
-            background-color: #007bff;
-            color: #fff;
-        }
-        .sidebar a.active {
-            background-color: #e7e9fc;
-            color: #000;
-        }
-    </style>
-</head>
-<body>
-    <div class="sidebar">
-        <h2>Dashboard</h2>
-         <a href="{% url 'user_data' %}">Users</a>
-        <a href="{% url 'category:category_list' %}">Categories</a>
-        <a href="{% url 'brand:brand_list' %}">Brands</a>
-        <a href="{% url 'product:product_list' %}">Products</a>   <a href="{% url 'admin_order_list' %}">Orders</a>
+{% extends 'adminside/base.html' %}
 
-    </div>
+{% load static %}
+
+{% block title %}Products{% endblock %}
+
+{% block content %}
     <div class="container mt-4">
-        <h1>Add Images for Variant {{ product_variant.product.product_name }} - {{ product_variant.size }} - {{ product_variant.colour_name }}</h1>
+        <h1 class="mb-4">Add Images for Variant: {{ product_variant.product.product_name }} - {{ product_variant.size }} - {{ product_variant.colour_name }}</h1>
+
         <!-- Add Variant Images Form -->
         <form method="post" enctype="multipart/form-data" id="variant-image-form">
             {% csrf_token %}
-            <div class="form-group">
-                <label for="images">Select Images</label>
+            <div class="form-group mb-3">
+                <label for="images" class="form-label">Select Images</label>
                 <input type="file" class="form-control" id="images" name="images" accept="image/*" multiple required>
                 <small class="form-text text-muted">Please upload valid image files.</small>
             </div>
@@ -58,9 +20,9 @@
         </form>
 
         <!-- Image Preview Section -->
-        <div class="container mt-4" style="width: 100%">
-            <h4 style="padding-top: 5px">Image Preview</h4>
-            <div id="imagePreview" style="width: 100%; overflow: auto; border: 1px solid #ddd; padding: 10px;"></div>
+        <div class="container mt-4">
+            <h4 class="mb-3">Image Preview</h4>
+            <div id="imagePreview" class="d-flex flex-wrap gap-3" style="border: 1px solid #ddd; padding: 10px;"></div>
         </div>
 
         <!-- Modal for Cropping Image -->
@@ -73,8 +35,8 @@
                         <h5 class="modal-title" id="cropperModalLabel">Crop Image</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body" style="width: 100%; height: 400px; overflow: hidden; display: flex; justify-content: center; align-items: center;">
-                        <img id="imageToCrop" style="max-width: 100%; max-height: 100%" />
+                    <div class="modal-body d-flex justify-content-center align-items-center" style="height: 400px;">
+                        <img id="imageToCrop" class="img-fluid" />
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -94,7 +56,16 @@
             font-size: 0.8em;
             line-height: 1.2;
         }
+        .imagePreview {
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+        }
+        .btn-danger {
+            margin-top: 5px;
+        }
     </style>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.6/cropper.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
 
@@ -133,25 +104,26 @@
                     reader.onload = (event) => {
                         const imageContainer = document.createElement("div");
                         imageContainer.style.position = "relative";
+                        imageContainer.style.width = "280px";
                         imageContainer.style.marginBottom = "10px";
-                        imageContainer.style.display = "flex";
-                        imageContainer.style.alignItems = "center";
-                        imageContainer.style.justifyContent = "space-between";
 
                         const img = document.createElement("img");
                         img.src = event.target.result;
                         img.className = "imagePreview";
-                        img.style.maxWidth = "280px";
+                        img.style.maxWidth = "100%";
                         img.style.maxHeight = "280px";
-                        img.style.marginRight = "10px";
                         img.style.objectFit = "cover";
 
                         const buttonContainer = document.createElement("div");
-                        buttonContainer.style.display = "flex";
-                        buttonContainer.style.flexDirection = "column";
+                        buttonContainer.style.position = "absolute";
+                        buttonContainer.style.top = "0";
+                        buttonContainer.style.right = "0";
+                        buttonContainer.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+                        buttonContainer.style.padding = "5px";
+                        buttonContainer.style.borderRadius = "0 0 0 8px";
 
                         const deleteButton = document.createElement("button");
-                        deleteButton.className = "btn btn-danger btn-sm mb-2";
+                        deleteButton.className = "btn btn-danger btn-sm";
                         deleteButton.innerText = "Remove";
                         deleteButton.addEventListener("click", () => {
                             imageContainer.remove(); // Removes the image container from the DOM
@@ -246,5 +218,4 @@
             });
         });
     </script>
-</body>
-</html>
+{% endblock %}

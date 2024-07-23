@@ -9,7 +9,7 @@ urlpatterns = [
     path('admin-logout/', views.admin_logout, name='admin-logout'),
     path('admin-dashboard/', views.admin_dashboard, name='admin-dashboard'),
     path('admin-orders/', views.order_list, name='admin_order_list'),
-    path('admin-orders/<int:pk>/update-status/', views.update_order_status, name='update_order_status'),
-    path('admin-orders/<int:pk>/cancel/', views.cancel_order, name='admin_cancel_order'),
+    path('<int:pk>/update-order_status/', views.update_order_status, name='update_order_status'),
+    path('<int:pk>/cancel/', views.cancel_order, name='admin_cancel_order'),
 
 ]

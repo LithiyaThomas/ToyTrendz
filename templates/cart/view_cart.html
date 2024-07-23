@@ -130,7 +130,7 @@ header .icon:hover {
                             <div class="card-body">
                                 <h5 class="card-title fs-6">{{ item.variant.product.product_name }}</h5>
                                 <p class="card-text small">Colour: {{ item.variant.colour_name }}</p>
-                                <p class="card-text small" id="item-price-{{ item.id }}">Price: ${{ item.variant.product.price }}</p>
+                                <p class="card-text small" id="item-price-{{ item.id }}">Price: ${{ item.variant.product.offer_price }}</p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div class="d-flex align-items-center">
                                         <button type="button" class="quantity-btn" onclick="changeQuantity('{{ item.id }}', -1, {{ item.variant.variant_stock }})">-</button>
@@ -165,6 +165,32 @@ header .icon:hover {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+
+   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        {% if messages %}
+            const messages = [
+                {% for message in messages %}
+                    {
+                        level: "{{ message.tags }}",
+                        text: "{{ message }}"
+                    },
+                {% endfor %}
+            ];
+            messages.forEach(message => {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-right',
+                    icon: message.level === 'success' ? 'success' : 'error',
+                    title: message.text,
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            });
+        {% endif %}
+    });
+</script>
     <script>
         function changeQuantity(itemId, change, maxStock) {
             const quantityInput = document.getElementById('quantity' + itemId);

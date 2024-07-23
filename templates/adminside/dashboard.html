@@ -1,122 +1,96 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            display: flex;
-        }
-        .sidebar {
-            min-width: 250px;
-            max-width: 250px;
-            background-color: #f8f9fa;
-            height: 100vh;
-            border-right: 1px solid #ddd;
-            padding-top: 20px;
-        }
-        .sidebar a {
-            padding: 15px;
-            text-decoration: none;
-            font-size: 18px;
-            color: #000;
-            display: block;
-        }
-        .sidebar a:hover {
-            background-color: #007bff;
-            color: #fff;
-        }
-        .sidebar a.active {
-            background-color: #e7e9fc;
-            color: #000;
-        }
-        .content {
-            flex: 1;
-            padding: 20px;
-        }
-        .header {
-            background-color: #007bff;
-            color: #fff;
-            padding: 10px;
-            text-align: center;
-            font-size: 24px;
-        }
-    </style>
-</head>
-<body>
-    <div class="sidebar">
-        <h2 class="text-center">Dashboard</h2>
-        <a href="{% url 'user_data' %}">Users</a>
-        <a href="{% url 'category:category_list' %}">Categories</a>
-        <a href="{% url 'brand:brand_list' %}">Brands</a>
-        <a href="{% url 'product:product_list' %}">Products</a>
-        <a href="{% url 'admin_order_list' %}">Orders</a>
+{% extends 'adminside/base.html' %}
 
+{% block title %}Dashboard{% endblock %}
 
-    </div>
-    <div class="content">
-        <div class="header">Dashboard</div>
-        <div class="container mt-5">
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="card text-center">
-                        <div class="card-body">
-                            <h5 class="card-title">Revenue</h5>
-                            <p class="card-text">$13,456.5</p>
-                            <small>Shipping fees are not included</small>
+{% block content %}
+    <div class="container-fluid">
+                <div class="row">
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card border-left-primary shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="card-title">Revenue</div>
+                                        <div class="card-text">$13,456.5</div>
+                                        <small>Shipping fees are not included</small>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card border-left-success shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="card-title">Orders</div>
+                                        <div class="card-text">53,668</div>
+                                        <small>Excluding orders in transit</small>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card border-left-info shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="card-title">Products</div>
+                                        <div class="card-text">9,856</div>
+                                        <small>In 19 Categories</small>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card border-left-warning shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="card-title">Monthly Earning</div>
+                                        <div class="card-text">$6,982</div>
+                                        <small>Based on your local time</small>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card text-center">
-                        <div class="card-body">
-                            <h5 class="card-title">Orders</h5>
-                            <p class="card-text">53,668</p>
-                            <small>Excluding orders in transit</small>
+                <div class="row">
+                    <div class="col-xl-6 col-lg-7">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                <h6 class="m-0 font-weight-bold text-primary">Sale Statistics</h6>
+                            </div>
+                            <div class="card-body">
+                                <!-- Include your chart here -->
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card text-center">
-                        <div class="card-body">
-                            <h5 class="card-title">Products</h5>
-                            <p class="card-text">9,856</p>
-                            <small>In 19 Categories</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card text-center">
-                        <div class="card-body">
-                            <h5 class="card-title">Monthly Earning</h5>
-                            <p class="card-text">$6,982</p>
-                            <small>Based in your local time</small>
+                    <div class="col-xl-6 col-lg-5">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                <h6 class="m-0 font-weight-bold text-primary">Revenue Based on Area</h6>
+                            </div>
+                            <div class="card-body">
+                                <!-- Include your chart here -->
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="row mt-4">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Sale Statistics</h5>
-                            <!-- Include your chart here -->
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Revenue Base on Area</h5>
-                            <!-- Include your chart here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+{% endblock %}

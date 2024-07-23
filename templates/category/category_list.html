@@ -1,163 +1,43 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Category List</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            margin: 0;
-            padding: 0;
-            display: flex;
-        }
+{% extends 'adminside/base.html' %}
 
-        .container {
-            flex-grow: 1;
-            padding: 20px;
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            margin: 20px;
-        }
+{% block title %} Category{% endblock %}
 
-        h1 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .add-category {
-            display: inline-block;
-            margin-bottom: 20px;
-            padding: 10px 15px;
-            background-color: #007bff;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 4px;
-            transition: background-color 0.3s ease;
-        }
-
-        .add-category:hover {
-            background-color: #0056b3;
-        }
-
-        ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        li {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        li:last-child {
-            border-bottom: none;
-        }
-
-        .category-name {
-            flex: 1;
-        }
-
-        .actions a {
-            margin-left: 10px;
-            padding: 5px 10px;
-            background-color: #28a745;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 4px;
-            transition: background-color 0.3s ease;
-        }
-
-        .actions a:hover {
-            background-color: #218838;
-        }
-
-        .actions .delete {
-            background-color: #dc3545;
-        }
-
-        .actions .delete:hover {
-            background-color: #c82333;
-        }
-
-        .actions .restore {
-            background-color: #ffc107;
-            color: #333;
-        }
-
-        .actions .restore:hover {
-            background-color: #e0a800;
-        }
-
-        .sidebar {
-            min-width: 250px;
-            max-width: 250px;
-            background-color: #f8f9fa;
-            height: 100vh;
-            border-right: 1px solid #ddd;
-            padding-top: 20px;
-        }
-
-        .sidebar a {
-            padding: 15px;
-            text-decoration: none;
-            font-size: 18px;
-            color: #000;
-            display: block;
-        }
-
-        .sidebar a:hover {
-            background-color: #007bff;
-            color: #fff;
-        }
-
-        .sidebar a.active {
-            background-color: #e7e9fc;
-            color: #000;
-        }
-
-        .main-content {
-            flex-grow: 1;
-            padding: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="sidebar">
-        <h2 class="text-center">Dashboard</h2>
-        <a href="{% url 'user_data' %}">Users</a>
-        <a href="{% url 'category:category_list' %}">Categories</a>
-        <a href="{% url 'brand:brand_list' %}">Brands</a>
-        <a href="{% url 'product:product_list' %}">Products</a>
-        <a href="{% url 'admin_order_list' %}">Orders</a>
-
-    </div>
-
+{% block content %}
     <div class="main-content container">
-        <h1>Categories</h1>
-        <a href="{% url 'category:category_create' %}" class="add-category">Add Category</a>
-        <ul>
-            {% for category in categories %}
-                {% if category.category_name %}
-                    <li>
-                        <span class="category-name">{{ category.category_name }}</span>
-                        <div class="actions">
-                            <a href="{% url 'category:category_update' category.id %}">Edit</a>
-                            {% if category.is_deleted %}
-                                <a href="{% url 'category:category_restore' category.id %}" class="restore">Restore</a>
-                            {% else %}
-                                <a href="{% url 'category:category_delete' category.id %}" class="delete">Delete</a>
-                            {% endif %}
-                        </div>
-                    </li>
-                {% endif %}
-            {% endfor %}
-        </ul>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+
+            <a href="{% url 'category:category_create' %}" class="btn btn-primary">Add Category</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>Category Name</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for category in categories %}
+                        {% if category.category_name %}
+                            <tr>
+                                <td>{{ category.category_name }}</td>
+                                <td>{{ category.is_deleted }}</td>
+                                <td class="text-end">
+                                    <div class="d-flex">
+                                        <a href="{% url 'category:category_update' category.id %}" class="btn btn-warning btn-sm p-2 me-1">Edit</a>
+                                        {% if category.is_deleted %}
+                                            <a href="{% url 'category:category_restore' category.id %}" class="btn btn-success btn-sm p-2 me-1">Restore</a>
+                                        {% else %}
+                                            <a href="{% url 'category:category_delete' category.id %}" class="btn btn-danger btn-sm p-2">Delete</a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-</body>
-</html>
+{% endblock %}

@@ -1,7 +1,7 @@
 from django.views.generic import ListView, CreateView, UpdateView, DetailView
 from django.urls import reverse_lazy, reverse
-from .models import (Product, ProductVariant, Category, Brand, Rating, ProductVariantImage)
-from .forms import (ProductForm, ProductVariantForm,ProductVariantImageForm)
+from .models import (Product, ProductVariant, Category, Brand,  ProductVariantImage)
+from .forms import (ProductForm, ProductVariantForm)
 from django.shortcuts import get_object_or_404
 from django.views.generic.edit import View
 from django.shortcuts import render, redirect
@@ -9,9 +9,16 @@ from django.http import HttpResponseRedirect
 from django.contrib import messages
 from django.core.serializers.json import DjangoJSONEncoder
 import json
-
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_control
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+def is_admin(user):
+    return user.is_superuser
 
 # Product ListView
+@method_decorator(cache_control(no_cache=True, must_revalidate=True, no_store=True), name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class ProductListView(ListView):
     model = Product
     template_name = 'product/product_list.html'
@@ -22,8 +29,14 @@ class ProductListView(ListView):
             .prefetch_related('productvariant_set__productvariantimage_set') \
             .all()
 
+    def dispatch(self, request, *args, **kwargs):
+        if not request.session.get('is_admin'):
+            return redirect('admin-login')
+        return super().dispatch(request, *args, **kwargs)
+
 
 # Product CreateView
+
 class ProductCreateView(CreateView):
     model = Product
     form_class = ProductForm
@@ -37,6 +50,7 @@ class ProductCreateView(CreateView):
         return context
 
 # Product UpdateView
+
 class ProductUpdateView(UpdateView):
     model = Product
     form_class = ProductForm
@@ -53,6 +67,7 @@ class ProductUpdateView(UpdateView):
         return Product.objects.select_related('product_category', 'product_brand').all()
 
 # Product DeleteView
+
 class ProductToggleActiveView(View):
     def get(self, request, *args, **kwargs):
         product = Product.objects.get(pk=kwargs['pk'])
@@ -70,7 +85,7 @@ class ProductDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         product = self.object
 
-        # ... (previous code remains the same) ...
+
 
         # Fetch all variants with their images
         variants = ProductVariant.objects.filter(product=product).prefetch_related('productvariantimage_set')
@@ -92,12 +107,13 @@ class ProductDetailView(DetailView):
         # Set the first variant as default selected
         context['selected_variant'] = variants.first()
 
-        # ... (rest of the code remains the same) ...
+
 
         return context
     
 
 # Product Variant CreateView
+
 class ProductVariantCreateView(CreateView):
     model = ProductVariant
     form_class = ProductVariantForm
@@ -135,13 +151,13 @@ class ProductVariantUpdateView(UpdateView):
         return reverse_lazy('product:product_variants', kwargs={'product_id': self.object.product_id})
 
 # Product Variant DeleteView
-class ProductVariantDeleteView(View):
-    def get(self, request, pk):
-        variant = get_object_or_404(ProductVariant, pk=pk)
-        # Toggle active state
-        variant.variant_status = not variant.variant_status
+
+class ProductVariantStatusToggleView(View):
+    def post(self, request, *args, **kwargs):
+        variant = get_object_or_404(ProductVariant, pk=kwargs['pk'])
+        variant.is_active = not variant.is_active
         variant.save()
-        return redirect('product:product_variants', product_id=variant.product_id)
+        return JsonResponse({'status': variant.is_active})
 
 # Product Variant ListView
 class ProductVariantListView(ListView):
@@ -174,6 +190,7 @@ class ProductVariantImageCreateView(View):
 
 
 # Demo View
+
 class DemoView(CreateView):
     model = Product
     form_class = ProductForm

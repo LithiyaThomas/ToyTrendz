@@ -13,7 +13,7 @@ from django.urls import reverse
 def list_orders(request):
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
 
-    paginator = Paginator(orders, 10)  # Show 10 orders per page
+    paginator = Paginator(orders, 10)
     page = request.GET.get('page')
 
     try:
@@ -77,6 +77,13 @@ def proceed_to_payment(request):
 
     if cart:
         cart_items = CartItem.objects.filter(cart=cart)
+        for item in cart_items:
+            if item.quantity > item.variant.variant_stock:
+                messages.error(request, f"Insufficient stock for {item.product.product_name}.")
+                return redirect('cart:view_cart')
+            if not item.product.is_active or not item.variant.variant_status:
+                messages.error(request, f"{item.product.product_name} is no longer available.")
+                return redirect('cart:view_cart')
         cart_total = sum(item.get_total_price() for item in cart_items)
     else:
         cart_items = []
@@ -112,9 +119,16 @@ def place_order(request):
                 cart_items = CartItem.objects.filter(cart=cart)
 
                 if not cart_items.exists():
-                    logger.warning("Cart is empty")
                     messages.error(request, "Your cart is empty.")
                     return redirect('order:checkout')
+
+                for item in cart_items:
+                    if item.quantity > item.variant.variant_stock:
+                        messages.error(request, f"Insufficient stock for {item.product.product_name}.")
+                        return redirect('cart:view_cart')
+                    if not item.product.is_active or not item.variant.variant_status:
+                        messages.error(request, f"{item.product.product_name} is no longer available.")
+                        return redirect('cart:view_cart')
 
                 cart_total = sum(item.get_total_price() for item in cart_items)
 
@@ -130,6 +144,7 @@ def place_order(request):
                     OrderItem.objects.create(
                         order=order,
                         product=item.product,
+                        variant=item.variant,
                         quantity=item.quantity,
                         price=item.product.offer_price
                     )
@@ -168,7 +183,8 @@ def order_success(request, order_uuid):
     order = get_object_or_404(Order, uuid=order_uuid)
     context = {
         'order': order,
-        'order_id': order.id  # Assuming your Order model has an 'id' field
+        'order_id': order.id,
+
     }
     return render(request, 'order/order_success.html', context)
 
@@ -208,8 +224,17 @@ def add_address(request):
 
 @login_required
 def order_detail(request, order_uuid):
-    # Retrieve the order object for the given UUID and ensure it's for the logged-in user
+
     order = get_object_or_404(Order, uuid=order_uuid, user=request.user)
 
-    # Render the order details page
-    return render(request, 'order/order_detail.html', {'order': order})
+
+    user = order.user
+    address = order.shipping_address
+
+    context = {
+        'order': order,
+        'user': user,
+        'address': address,
+    }
+
+    return render(request, 'order/order_detail.html', context)

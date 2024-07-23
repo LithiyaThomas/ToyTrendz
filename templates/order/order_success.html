@@ -7,130 +7,111 @@
     <title>Order Confirmation</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
-        header {
-    background-color: #ff69b4;
-    padding: 10px 0;
-}
-
-header .container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-}
-
-header h1 {
-    margin: 0;
-    font-size: 28px;
-    color: white;
-}
-
-header .icons {
-    display: flex;
-    align-items: center;
-}
-
-header .icon {
-    color: white;
-    font-size: 20px;
-    margin-left: 20px;
-    text-decoration: none;
-}
-.product-image {
+        .product-image {
             width: 100px;
             height: 100px;
             object-fit: cover;
             border-radius: 5px;
         }
-header .icon:hover {
-    color: #f0f0f0;
-}
+        .order-header {
+            background-color: #28a745;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+        }
+        .order-details {
+            margin-top: 30px;
+        }
+        .table thead th {
+            background-color: #f8f9fa;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .table tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+        .table tbody td {
+            vertical-align: middle;
+        }
+        .table tfoot th {
+            font-weight: bold;
+        }
     </style>
 </head>
 
 <body>
-    <header>
     <div class="container">
-        <h1>COZY CRIBS</h1>
-        <div class="icons">
-            <a href="#" class="icon"><i class="fas fa-heart"></i></a>
-            <a href="{% url 'cart:view_cart' %}" class="icon"><i class="fas fa-shopping-bag"></i></a>
-            {% if not user.is_authenticated %}
-                <a href="{% url 'user_login' %}" class="icon"><i class="fas fa-user"></i></a>
-            {% else %}
-                <a href="{% url 'user_logout' %}" class="icon"><i class="fas fa-sign-out-alt"></i></a>
-                <a href="{% url 'user_panel:user_profile' %}" class="icon"><i class="fas fa-user-circle"></i></a>
-            {% endif %}
-        </div>
-    </div>
-</header>
-    <div class="container mt-5">
         <div class="row justify-content-center">
             <div class="col-md-8">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-success text-white text-center py-4">
-                        <i class="bi bi-check-circle-fill" style="font-size: 3rem;"></i>
-                        <h4 class="mt-2 mb-0">Order Confirmation</h4>
-                    </div>
-                    <div class="card-body text-center p-5">
-                        <h2 class="card-title mb-4">Thank You for Your Order!</h2>
-                        <p class="card-text">Your order has been successfully placed and is being processed.</p>
-                        <div class="row mt-4">
-                            <div class="col-sm-6 text-start">
-                                <p><strong>Order ID:</strong> {{ order.uuid }}</p>
-                            </div>
-                            <div class="col-sm-6 text-end">
-                                <p><strong>Date:</strong> {{ order.created_at|date:"F d, Y" }}</p>
-                            </div>
+                <div class="order-header mb-4">
+                    <i class="bi bi-check-circle-fill" style="font-size: 3rem;"></i>
+                    <h1 class="mt-2">Order Confirmation</h1>
+                </div>
+
+                <div class="order-details text-center">
+                    <h2 class="mb-4">Thank You for Your Order!</h2>
+                    <p class="mb-4">Your order has been successfully placed and is being processed.</p>
+
+                    <div class="row mb-4">
+                        <div class="col-sm-6 text-sm-start">
+                            <p><strong>Order ID:</strong> {{ order.uuid }}</p>
                         </div>
-                        <div class="mt-4">
-                            <h5>Order Summary</h5>
-                            <div class="table-responsive">
-                                <table class="table table-striped">
-                                   <thead>
-                                        <tr>
-                                            <th>Image</th>
-                                            <th>Product</th>
-                                            <th>Quantity</th>
-                                            <th>Price</th>
-                                        </tr>
-                                    </thead>
-                                      <tbody>
-                                        {% for item in order.items.all %}
-                                        <tr>
-                                            <td>
-                                                {% with first_variant_image=item.product.productvariant_set.first.productvariantimage_set.first %}
-                                                    {% if first_variant_image %}
-                                                        <img src="{{ first_variant_image.image.url }}" alt="{{ item.product.product_name }}" class="product-image">
-                                                    {% endif %}
-                                                {% endwith %}
-                                            </td>
-                                            <td>{{ item.product.product_name }}</td>
-                                            <td>{{ item.quantity }}</td>
-                                            <td>${{ item.price }}</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <th colspan="2" class="text-end">Total:</th>
-                                            <th>${{ order.total_price }}</th>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="text-center mt-4">
-                            <a href="{% url 'home' %}" class="btn btn-primary me-2">Continue Shopping</a>
-                            <a href="" class="btn btn-outline-secondary">View Order Details</a>
+                        <div class="col-sm-6 text-sm-end">
+                            <p><strong>Date:</strong> {{ order.created_at|date:"F d, Y" }}</p>
                         </div>
                     </div>
-                    <div class="card-footer bg-light text-muted text-center py-3">
-                        <p class="mb-0">Need help? <a href="" class="text-decoration-none">Contact Support</a></p>
+
+                    <h3 class="mb-3">Order Summary</h3>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Image</th>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items.all %}
+                                <tr>
+                                    <td>
+                                        {% if item.variant %}
+
+                                            {% with variant_image=item.variant.productvariantimage_set.first %}
+                                                {% if variant_image and variant_image.image %}
+                                                    <img src="{{ variant_image.image.url }}" alt="{{ item.product.product_name }}" class="product-image">
+                                                {% elif item.product.thumbnail %}
+                                                    <img src="{{ item.product.thumbnail.url }}" alt="{{ item.product.product_name }}" class="product-image">
+                                                {% else %}
+                                                    No image available (Variant)
+                                                {% endif %}
+                                            {% endwith %}
+                                        {% elif item.product.thumbnail %}
+                                            <img src="{{ item.product.thumbnail.url }}" alt="{{ item.product.product_name }}" class="product-image">
+                                        {% else %}
+                                            No image available (Product)
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.product.product_name }}{% if item.variant %} - {{ item.variant.colour_name }}{% endif %}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>${{ item.price }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="3" class="text-end">Total:</th>
+                                    <th>${{ order.total_price }}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{% url 'home' %}" class="btn btn-primary me-2">Continue Shopping</a>
+                        <a href="{% url 'order:order_detail' order.uuid %}" class="btn btn-outline-secondary">View Order Details</a>
                     </div>
                 </div>
             </div>

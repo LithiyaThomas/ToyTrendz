@@ -17,7 +17,7 @@ class UserPanelProductListView(ListView):
     model = Product
     template_name = 'userside/product_list.html'
     context_object_name = 'products'
-    paginate_by = 12  # Adjust this number as needed
+    paginate_by = 12
 
     def get_queryset(self):
         queryset = Product.objects.all().select_related('product_category', 'product_brand') \
@@ -54,7 +54,6 @@ class UserPanelProductListView(ListView):
                 queryset = queryset.order_by('product_name')
             elif sort_by == 'z_to_a':
                 queryset = queryset.order_by('-product_name')
-            # 'featured' and 'color' options removed
 
         return queryset
 
@@ -62,16 +61,17 @@ class UserPanelProductListView(ListView):
         context = super().get_context_data(**kwargs)
         context['categories'] = Category.objects.all()
         context['sort_by'] = self.request.GET.get('sort_by', '')
-        context['search_query'] = self.request.GET.get('q', '')  # Add this line
+        context['search_query'] = self.request.GET.get('q', '')
 
         # Add query parameters to context for maintaining state in pagination
         context['query_params'] = self.request.GET.copy()
         if 'page' in context['query_params']:
             del context['query_params']['page']
-        if 'q' in context['query_params']:  # Add this block
+        if 'q' in context['query_params']:
             del context['query_params']['q']
 
         return context
+
 
 class ProductDetailView(DetailView):
     model = Product
@@ -111,9 +111,9 @@ class ProductDetailView(DetailView):
 
         context['ratings'] = ratings
         context['rating_form'] = RatingForm(initial={'product_id': product.id})
-        context['rating_range'] = range(1, 6)  # For displaying rating stars
+        context['rating_range'] = range(1, 6)
 
-        # Add any additional product information
+
         context['related_products'] = Product.objects.filter(product_category=product.product_category).exclude(
             id=product.id)[:4]
 
@@ -125,10 +125,13 @@ class ProductDetailView(DetailView):
         if form.is_valid():
             rating = form.save(commit=False)
             rating.product = self.object
-            rating.user = request.user  # Assuming you're using user authentication
+            rating.user = request.user
             rating.save()
-            # Redirect or render as needed
+
         return self.render_to_response(self.get_context_data(form=form))
+
+
+
 
 class AddRatingView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):

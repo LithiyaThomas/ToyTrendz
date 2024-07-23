@@ -1,65 +1,46 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Update Order Status</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            display: flex;
-        }
-        .sidebar {
-            min-width: 250px;
-            max-width: 250px;
-            background-color: #f8f9fa;
-            height: 100vh;
-            border-right: 1px solid #ddd;
-            padding-top: 20px;
-            position: fixed;
-        }
-        .sidebar a {
-            padding: 15px;
-            text-decoration: none;
-            font-size: 18px;
-            color: #000;
-            display: block;
-        }
-        .sidebar a:hover {
-            background-color: #007bff;
-            color: #fff;
-        }
-        .sidebar a.active {
-            background-color: #e7e9fc;
-            color: #000;
-        }
-        .content {
-            margin-left: 250px;
-            padding: 20px;
-            width: calc(100% - 250px);
-        }
-    </style>
-</head>
-<body>
-    <div class="sidebar">
-        <h2 class="text-center">Dashboard</h2>
-        <a href="{% url 'user_data' %}">Users</a>
-        <a href="{% url 'category:category_list' %}">Categories</a>
-        <a href="{% url 'brand:brand_list' %}">Brands</a>
-        <a href="{% url 'product:product_list' %}">Products</a>
-        <a href="{% url 'admin_order_list' %}">Orders</a>
-    </div>
+{% extends 'adminside/base.html' %}
 
-    <div class="content">
-        <div class="container mt-5">
-            <h2 class="mb-4">Update Order Status</h2>
-            <form method="post">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <button type="submit" class="btn btn-primary">Update Status</button>
-            </form>
-            <a href="{% url 'admin_order_list' %}" class="btn btn-secondary mt-2">Back to Order List</a>
+{% load static %}
+
+{% block title %}Order {% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Update Order Status</h2>
+            <a href="{% url 'admin_order_list' %}" class="btn btn-secondary">Back to Order List</a>
+        </div>
+
+        <!-- Update Status Form -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        {{ form.as_p }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Update Status</button>
+                </form>
+            </div>
         </div>
     </div>
-</body>
-</html>
+
+    <style>
+        .container {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .card {
+            border-radius: 8px;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+        }
+    </style>
+{% endblock %}

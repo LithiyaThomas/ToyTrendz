@@ -1,56 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cancel Order</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            display: flex;
-        }
-        .sidebar {
-            min-width: 250px;
-            max-width: 250px;
-            background-color: #f8f9fa;
-            height: 100vh;
-            border-right: 1px solid #ddd;
-            padding-top: 20px;
-            position: fixed;
-        }
-        .sidebar a {
-            padding: 15px;
-            text-decoration: none;
-            font-size: 18px;
-            color: #000;
-            display: block;
-        }
-        .sidebar a:hover {
-            background-color: #007bff;
-            color: #fff;
-        }
-        .sidebar a.active {
-            background-color: #e7e9fc;
-            color: #000;
-        }
-        .content {
-            margin-left: 250px;
-            padding: 20px;
-            width: calc(100% - 250px);
-        }
-    </style>
-</head>
-<body>
-    <div class="sidebar">
-        <h2 class="text-center">Dashboard</h2>
-        <a href="{% url 'user_data' %}">Users</a>
-        <a href="{% url 'category:category_list' %}">Categories</a>
-        <a href="{% url 'brand:brand_list' %}">Brands</a>
-        <a href="{% url 'product:product_list' %}">Products</a>
-        <a href="{% url 'admin_order_list' %}">Orders</a>
-    </div>
+{% extends 'adminside/base.html' %}
 
-    <div class="content">
+{% load static %}
+
+{% block title %}Order{% endblock %}
+
+{% block content %}
+       <div class="content">
         <div class="container mt-5">
             <h2 class="mb-4">Cancel Order</h2>
             <form method="post">
@@ -61,5 +16,9 @@
             </form>
         </div>
     </div>
-</body>
-</html>
+{% endblock %}
+
+
+
+
+

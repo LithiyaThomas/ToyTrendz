@@ -67,3 +67,6 @@
 #     list_filter = ('rating', 'date_added')
 #
 #
+from .models import Product
+from django.contrib import admin
+admin.site.register(Product)

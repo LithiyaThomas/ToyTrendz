@@ -2,28 +2,39 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from .models import Order, OrderItem, Payment
+from .models import Order, OrderItem, Payment, Address
 from django.db import transaction
 from .models import Address
 from cart.models import Cart, CartItem
-import logging
 from django.urls import reverse
+
 
 @login_required
 def list_orders(request):
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
 
+    # Prefetch related items to avoid N+1 queries
+    orders = orders.prefetch_related(
+        'items',
+        'items__product',
+        'items__variant'
+    )
     paginator = Paginator(orders, 10)
     page = request.GET.get('page')
 
     try:
-        orders = paginator.page(page)
+        paginated_orders = paginator.page(page)
     except PageNotAnInteger:
-        orders = paginator.page(1)
+        paginated_orders = paginator.page(1)
     except EmptyPage:
-        orders = paginator.page(paginator.num_pages)
+        paginated_orders = paginator.page(paginator.num_pages)
 
-    return render(request, 'order/order_list.html', {'orders': orders})
+    context = {
+        'orders': paginated_orders,
+        'order_count': orders.count(),  # Add total order count for reference
+    }
+
+    return render(request, 'order/order_list.html', context)
 
 
 @login_required
@@ -41,16 +52,26 @@ def change_order_status(request, order_uuid, new_status):
     return redirect('order_detail', order_uuid=order_uuid)
 
 
+
 @login_required
 def cancel_order(request, order_uuid):
     order = get_object_or_404(Order, uuid=order_uuid, user=request.user)
 
     if request.method == "POST":
-        if order.status in ['Pending', 'Confirmed']:
+        if order.status in ['Pending', 'Confirmed', 'Shipped']:
             with transaction.atomic():
+                # Update stock levels for each item in the order
+                for item in order.items.all():
+                    if item.variant:
+                        variant = item.variant
+                        variant.variant_stock += item.quantity
+                        variant.save()
+
+                # Update the order status
                 order.status = 'Cancelled'
                 order.save()
 
+                # Handle payment refund if applicable
                 if order.payment_method in ['online_payment', 'wallet']:
                     amount = order.total_price
                     Payment.objects.create(
@@ -59,6 +80,7 @@ def cancel_order(request, order_uuid):
                         payment_method=order.payment_method,
                         transaction_id=f"REFUND-{order.uuid}"
                     )
+
                 messages.success(request, "Order cancelled successfully.")
             return redirect('order:list_orders')
         else:
@@ -98,17 +120,14 @@ def proceed_to_payment(request):
         'payment_options': payment_options
     })
 
-logger = logging.getLogger(__name__)
+
 @login_required
 def place_order(request):
-    logger.info("Place order view called")
     if request.method == "POST":
-        logger.info("POST request received")
         address_id = request.POST.get('selected_address')
         payment_method = request.POST.get('payment_method')
 
         if not address_id or not payment_method:
-            logger.warning("Address or payment method not selected")
             messages.error(request, "Please select an address and payment method.")
             return redirect('order:checkout')
 
@@ -138,7 +157,6 @@ def place_order(request):
                     payment_method=payment_method,
                     address=address
                 )
-                logger.info(f"Order created with UUID: {order.uuid}")
 
                 for item in cart_items:
                     OrderItem.objects.create(
@@ -148,35 +166,28 @@ def place_order(request):
                         quantity=item.quantity,
                         price=item.product.offer_price
                     )
-                    logger.info(f"OrderItem created for product: {item.product.product_name}")
 
                     if item.variant:
                         if item.variant.variant_stock < item.quantity:
                             raise ValueError(f"Not enough stock for {item.product.product_name} - {item.variant.colour_name}")
                         item.variant.variant_stock -= item.quantity
                         item.variant.save()
-                        logger.info(f"Updated stock for variant: {item.variant}")
 
                 cart_items.delete()
                 cart.delete()
-                logger.info("Cart cleared")
 
                 messages.success(request, "Your order has been placed successfully!")
                 return redirect('order:order_success', order_uuid=order.uuid)
 
         except ValueError as e:
-            logger.error(f"ValueError: {str(e)}")
             messages.error(request, str(e))
             return redirect('order:checkout')
         except Exception as e:
-            logger.error(f"Unexpected error: {str(e)}", exc_info=True)
             messages.error(request, "An error occurred while processing your order. Please try again.")
             return redirect('order:checkout')
 
     else:
-        logger.info("GET request received, redirecting to checkout")
         return redirect('order:checkout')
-
 
 @login_required
 def order_success(request, order_uuid):
@@ -223,18 +234,21 @@ def add_address(request):
 
 
 @login_required
+@login_required
 def order_detail(request, order_uuid):
-
     order = get_object_or_404(Order, uuid=order_uuid, user=request.user)
 
-
+    # User information
     user = order.user
-    address = order.shipping_address
+    address = order.address
+
+    items = OrderItem.objects.filter(order=order)
 
     context = {
         'order': order,
         'user': user,
         'address': address,
+        'items': items,
     }
 
     return render(request, 'order/order_detail.html', context)

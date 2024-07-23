@@ -4,6 +4,7 @@ from accounts.models import Address
 from product.models import Product, ProductVariant
 import uuid
 from decimal import Decimal
+
 # Create your models here.
 class Order(models.Model):
     STATUS_CHOICES = (

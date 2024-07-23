@@ -154,10 +154,15 @@ class ProductVariantUpdateView(UpdateView):
 
 class ProductVariantStatusToggleView(View):
     def post(self, request, *args, **kwargs):
-        variant = get_object_or_404(ProductVariant, pk=kwargs['pk'])
-        variant.is_active = not variant.is_active
-        variant.save()
-        return JsonResponse({'status': variant.is_active})
+        data = json.loads(request.body)
+        variant_id = data.get('variantId')
+        try:
+            variant = ProductVariant.objects.get(pk=variant_id)
+            variant.is_active = not variant.is_active
+            variant.save()
+            return JsonResponse({'status': variant.is_active})
+        except ProductVariant.DoesNotExist:
+            return JsonResponse({'error': 'Variant not found'}, status=404)
 
 # Product Variant ListView
 class ProductVariantListView(ListView):

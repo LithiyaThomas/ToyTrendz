@@ -7,13 +7,31 @@
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 <style>
-    .variant-table { box-shadow: 0 0 20px rgba(0,0,0,0.1); }
-    .variant-table th { background-color: #f8f9fa; }
-    .variant-table td, .variant-table th { vertical-align: middle; }
-    .color-box { width: 30px; height: 30px; border-radius: 50%; display: inline-block; }
-    .action-btn { margin: 0 5px; }
-    .variant-image { cursor: pointer; transition: transform 0.3s; }
-    .variant-image:hover { transform: scale(1.1); }
+    .variant-table {
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    .variant-table th {
+        background-color: #f8f9fa;
+    }
+    .variant-table td, .variant-table th {
+        vertical-align: middle;
+    }
+    .color-box {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    .action-btn {
+        margin: 0 5px;
+    }
+    .variant-image {
+        cursor: pointer;
+        transition: transform 0.3s;
+    }
+    .variant-image:hover {
+        transform: scale(1.1);
+    }
 </style>
 {% endblock %}
 
@@ -48,9 +66,9 @@
                         </td>
                         <td>{{ variant.variant_stock }}</td>
                         <td>
-                                <span class="badge {% if variant.is_active %}bg-success{% else %}bg-danger{% endif %}">
-        {{ variant.is_active|yesno:"Active,Inactive" }}
-    </span>
+                            <span class="badge {% if variant.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ variant.is_active|yesno:"Active,Inactive" }}
+                            </span>
                         </td>
                         <td>
                             {% for image in variant.productvariantimage_set.all|slice:":3" %}
@@ -66,13 +84,13 @@
                             <a href="{% url 'product:add_variant_image' pk=variant.pk %}" class="btn btn-sm btn-info action-btn" title="Add Image">
                                 <i class="fas fa-image"></i>
                             </a>
-                           <button
-        class="btn btn-sm {% if variant.is_active %}btn-danger{% else %}btn-success{% endif %} action-btn"
-        data-variant-id="{{ variant.pk }}"
-        onclick="confirmToggleStatus({{ variant.pk }}, '{% url 'product:toggle_variant_status' pk=variant.pk %}')"
-        title="{% if variant.is_active %}Deactivate{% else %}Activate{% endif %}">
-        <i class="fas {% if variant.is_active %}fa-toggle-off{% else %}fa-toggle-on{% endif %}"></i>
-    </button>
+                            <button
+                                class="btn btn-sm {% if variant.is_active %}btn-danger{% else %}btn-success{% endif %} action-btn"
+                                data-variant-id="{{ variant.pk }}"
+                                onclick="confirmToggleStatus({{ variant.pk }}, '{% url 'product:toggle_variant_status' pk=variant.pk %}')"
+                                title="{% if variant.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                <i class="fas {% if variant.is_active %}fa-toggle-off{% else %}fa-toggle-on{% endif %}"></i>
+                            </button>
                         </td>
                     </tr>
                 {% endfor %}
@@ -104,7 +122,6 @@
 {% block extra_js %}
 <script>
 function confirmToggleStatus(variantId, url) {
-    console.log('Function called for variant:', variantId);
     if (confirm('Are you sure you want to change the status of this variant?')) {
         fetch(url, {
             method: 'POST',
@@ -115,14 +132,12 @@ function confirmToggleStatus(variantId, url) {
             body: JSON.stringify({ 'variantId': variantId })
         })
         .then(response => {
-            console.log('Response received:', response);
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
             return response.json();
         })
         .then(data => {
-            console.log('Data received:', data);
             if (data.status !== undefined) {
                 let button = document.querySelector(`button[data-variant-id="${variantId}"]`);
                 let statusBadge = button.closest('tr').querySelector('.badge');
@@ -152,5 +167,6 @@ function confirmToggleStatus(variantId, url) {
             alert('An error occurred. Please try again.');
         });
     }
-}</script>
+}
+</script>
 {% endblock %}

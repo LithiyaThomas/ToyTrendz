@@ -22,7 +22,7 @@ class Category(models.Model):
     def get_url(self):
         return reverse('product_list_by_category', args=[self.slug])
 
-    def soft_delete(self, *args, **kwargs):
+    def soft_delete(self):
         self.is_deleted = True
         self.save()
 

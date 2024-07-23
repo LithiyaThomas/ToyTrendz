@@ -47,17 +47,14 @@ def category_update(request, pk):
         return redirect('category:category_list')
     return render(request, 'category/category_form.html', {'category': category})
 
-# Soft Delete Category
 @login_required(login_url='admin-login')
 def category_delete(request, pk):
     category = get_object_or_404(Category, pk=pk)
     category.soft_delete()
     return redirect('category:category_list')
 
-# Restore Category
 @login_required(login_url='admin-login')
 def category_restore(request, pk):
     category = get_object_or_404(Category, pk=pk)
     category.restore()
     return redirect('category:category_list')
-

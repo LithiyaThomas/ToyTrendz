@@ -1,5 +1,5 @@
 from django.views.generic import ListView, DetailView, View,UpdateView
-from django.shortcuts import redirect, get_object_or_404
+from django.shortcuts import redirect, get_object_or_404,render
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Prefetch, Q
 from product.models import Product, Category, Rating, ProductVariant, ProductVariantImage
@@ -11,6 +11,8 @@ from django.contrib.auth.views import PasswordChangeView
 from .forms import SimpleUserChangeForm,CustomPasswordChangeForm
 from django.contrib.auth import get_user_model
 from django.contrib import messages
+from django.http import JsonResponse
+from cart.models import Wishlist
 User = get_user_model()
 
 
@@ -159,7 +161,7 @@ class UserProfile(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
-        profiles = Address.objects.filter(user=user)
+        profiles = Address.objects.filter(user=user, is_deleted=False)
 
         context['user'] = user
         context['profiles'] = profiles
@@ -197,3 +199,42 @@ class ChangePasswordView(LoginRequiredMixin, PasswordChangeView):
             if field.errors:
                 messages.error(self.request, field.errors.as_text())
         return response
+
+
+class AddToWishlistView(LoginRequiredMixin, View):
+    login_url = 'accounts:user_login'
+
+    def post(self, request, *args, **kwargs):
+        variant_id = self.kwargs.get('variant_id')
+        variant = get_object_or_404(ProductVariant, id=variant_id)
+        wishlist, created = Wishlist.objects.get_or_create(user=request.user, variant=variant)
+
+        if created:
+            return JsonResponse({'success': True, 'message': 'Product added to wishlist.'})
+        else:
+            return JsonResponse({'success': False, 'message': 'Product already in wishlist.'})
+
+
+class RemoveFromWishlistView(LoginRequiredMixin, View):
+    login_url = 'accounts:user_login'
+
+    def post(self, request, *args, **kwargs):
+        variant_id = self.kwargs.get('variant_id')
+        variant = get_object_or_404(ProductVariant, id=variant_id)
+
+        try:
+            wishlist_item = Wishlist.objects.get(user=request.user, variant=variant)
+            wishlist_item.delete()
+            return JsonResponse({'success': True, 'message': 'Product removed from wishlist.'})
+        except Wishlist.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Product not found in wishlist.'})
+
+
+class WishlistListView(LoginRequiredMixin, ListView):
+    model = Wishlist
+    template_name = 'userside/wish-list.html'
+    context_object_name = 'wishlist_items'
+    login_url = 'accounts:user_login'
+
+    def get_queryset(self):
+        return Wishlist.objects.filter(user=self.request.user)

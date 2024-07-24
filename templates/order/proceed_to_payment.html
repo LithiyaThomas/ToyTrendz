@@ -180,6 +180,14 @@ header .icon:hover {
                     <form id="newAddressForm" method="post" action="{% url 'order:add_address' %}">
                         {% csrf_token %}
                         <div class="mb-3">
+                            <label for="full_name" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="full_name" name="full_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="phone_number" class="form-label">Phone Number</label>
+                            <input type="text" class="form-control" id="phone_number" name="phone_number" required>
+                        </div>
+                        <div class="mb-3">
                             <label for="address_line1" class="form-label">Address Line 1</label>
                             <input type="text" class="form-control" id="address_line1" name="address_line_1" required>
                         </div>

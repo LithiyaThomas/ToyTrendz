@@ -183,6 +183,7 @@ def edit_address(request, address_id):
             if next_url:
                 return redirect(next_url)
             else:
+                messages.success(request, "Address updated successfully")
                 return redirect('user_panel:user_profile')
     else:
         form = AddressForm(instance=address)
@@ -194,7 +195,9 @@ def delete_address(request, address_id):
     address = get_object_or_404(Address, id=address_id, user=request.user)
 
     if request.method == 'POST':
-        address.delete()
+        address.is_deleted = True
+        address.save()
+        messages.success(request,"Address deleted successfully")
         return redirect('user_panel:user_profile')
 
     return render(request, 'accounts/delete_address.html', {'address': address})

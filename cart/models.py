@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from product.models import Product, ProductVariant
+from accounts.models import User
 
 class Cart(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -28,3 +29,15 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f"{self.product.product_name} - {self.variant.colour_name} - {self.quantity}"
+
+
+class Wishlist(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    product_variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'product_variant')
+
+    def __str__(self):
+        return f"{self.user.username}'s wishlist: {self.product_variant}"

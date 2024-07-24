@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body { background-color: #f8f9fa; }
-           header {
+        header {
             background-color: #ff69b4;
             padding: 10px 0;
         }
@@ -46,7 +46,7 @@
     </style>
 </head>
 <body>
-   <header style="background-color: #FF69B4; padding: 10px 0;">
+    <header style="background-color: #FF69B4; padding: 10px 0;">
         <div class="container-fluid">
             <div class="row align-items-center">
                 <div class="col">
@@ -76,7 +76,7 @@
                         <h5 class="card-title text-primary">Order Information</h5>
                         <p class="mb-1"><strong>Order ID:</strong> {{ order.uuid }}</p>
                         <p class="mb-1"><strong>Status:</strong> <span class="order-status status-{{ order.status|lower }}">{{ order.get_status_display }}</span></p>
-                        <p class="mb-1"><strong>Total Price:</strong> ${{ order.total_price }}</p>
+                        <p class="mb-1"><strong>Total Price:</strong> ${{ order.total_price|floatformat:2 }}</p>
                     </div>
                 </div>
             </div>
@@ -101,30 +101,45 @@
                         <thead>
                             <tr>
                                 <th>Image</th>
-
                                 <th>Product</th>
-                                <th>Colour</th>
                                 <th>Quantity</th>
                                 <th>Price</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for item in order.items.all %}
+                            {% for item in items %}
                             <tr>
                                 <td>
-                                    {% if item.variant.productvariantimage_set.first %}
-                                        <img src="{{ item.variant.productvariantimage_set.first.image.url }}" alt="{{ item.product.product_name }}" class="product-image">
-                                    {% else %}
-                                        <span class="text-muted">No image</span>
-                                    {% endif %}
+                                    {% with first_image=item.variant.productvariantimage_set.first %}
+                                        {% if first_image %}
+                                            <img src="{{ first_image.image.url }}" alt="{{ item.product.product_name }} - {{ item.variant.colour_name }}" class="product-image">
+                                        {% else %}
+                                            <span class="text-muted">No image</span>
+                                        {% endif %}
+                                    {% endwith %}
                                 </td>
-
-                                <td>{{ item.variant }}</td>
-                                <td>{{ item.variant.colour_name }}</td>
+                                <td>{{ item.product.product_name }} - {{ item.variant.colour_name }}</td>
                                 <td>{{ item.quantity }}</td>
-                                <td>${{ item.price }}</td>
+                                <td>${{ item.price|floatformat:2 }}</td>
                             </tr>
                             {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title text-primary">Order Summary</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <tbody>
+                            <tr>
+                                <td><strong>Subtotal:</strong></td>
+                                <td>${{ subtotal|floatformat:2 }}</td>
+                            </tr>
+
                         </tbody>
                     </table>
                 </div>
@@ -137,5 +152,30 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        {% if messages %}
+            const messages = [
+                {% for message in messages %}
+                    {
+                        level: "{{ message.tags }}",
+                        text: "{{ message }}"
+                    },
+                {% endfor %}
+            ];
+            messages.forEach(message => {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-right',
+                    icon: message.level === 'success' ? 'success' : 'error',
+                    title: message.text,
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            });
+        {% endif %}
+    });
+</script>
 </body>
 </html>

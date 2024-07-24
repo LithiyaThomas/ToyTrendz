@@ -19,6 +19,11 @@ def list_orders(request):
         'items__product',
         'items__variant'
     )
+
+    # Calculate subtotal for each order
+    for order in orders:
+        order.subtotal = sum(item.price * item.quantity for item in order.items.all())
+
     paginator = Paginator(orders, 10)
     page = request.GET.get('page')
 
@@ -101,7 +106,7 @@ def cancel_order(request, order_uuid):
 
 @login_required
 def proceed_to_payment(request):
-    addresses = Address.objects.filter(user=request.user)
+    addresses = Address.objects.filter(user=request.user, is_deleted=False)
 
     try:
         cart = Cart.objects.get(user=request.user)
@@ -214,6 +219,8 @@ def order_success(request, order_uuid):
 def add_address(request):
     if request.method == 'POST':
         # Extract form data
+        full_name=request.POST.get('full_name')
+        phone_number=request.POST.get('phone_number')
         address_line_1 = request.POST.get('address_line_1')
         address_line_2 = request.POST.get('address_line_2')
         city = request.POST.get('city')
@@ -225,6 +232,8 @@ def add_address(request):
         # Create new address
         new_address = Address(
             user=request.user,
+            full_name=full_name,
+            phone_number=phone_number,
             address_line_1=address_line_1,
             address_line_2=address_line_2,
             city=city,
@@ -245,7 +254,6 @@ def add_address(request):
 
 
 @login_required
-@login_required
 def order_detail(request, order_uuid):
     order = get_object_or_404(Order, uuid=order_uuid, user=request.user)
 
@@ -255,11 +263,15 @@ def order_detail(request, order_uuid):
 
     items = OrderItem.objects.filter(order=order)
 
+    # Calculate subtotal
+    subtotal = sum(item.price * item.quantity for item in items)
+
     context = {
         'order': order,
         'user': user,
         'address': address,
         'items': items,
+        'subtotal': subtotal,  # Add subtotal to the context
     }
 
     return render(request, 'order/order_detail.html', context)

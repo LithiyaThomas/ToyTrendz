@@ -21,16 +21,23 @@
   <component name="ChangeListManager">
     <list default="true" id="1bd12e59-14b0-4c90-96db-f9391668bcc7" name="Default Changelist" comment="added product">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/category/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/category/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/category/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/category/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/order/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/order/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/admin_panel/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/admin_panel/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/admin_panel/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/admin_panel/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/order/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/order/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/order/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/order/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/product/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/product/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/category/category_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/category/category_list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/order/order_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/order/order_detail.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/accounts/register.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/accounts/register.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/adminside/order_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/adminside/order_list.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/order/order_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/order/order_list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/order/order_success.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/order/order_success.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/product/product_variant_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/product/product_variant_list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/userside/change_password.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/userside/change_password.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/userside/edit_profile.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/userside/edit_profile.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/userside/product_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/userside/product_list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/user_panel/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/user_panel/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/user_panel/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/user_panel/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/user_panel/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/user_panel/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

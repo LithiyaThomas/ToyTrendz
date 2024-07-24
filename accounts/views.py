@@ -40,7 +40,6 @@ def user_login(request):
 
 
 
-# User registration view
 def user_register(request):
     if request.method == 'POST':
         form = RegisterForm(request.POST)
@@ -54,7 +53,6 @@ def user_register(request):
                 f"Your OTP code is {otp}",
                 settings.DEFAULT_FROM_EMAIL,
                 [user.email],
-
             )
             # Store the OTP in the session
             request.session['otp'] = str(otp)
@@ -62,9 +60,11 @@ def user_register(request):
             request.session['otp_creation_time'] = timezone.now().isoformat()
             return redirect('verify_otp')
         else:
+            # Form is invalid, display errors
             messages.error(request, 'Registration failed. Please correct the errors below.')
     else:
         form = RegisterForm()
+
     return render(request, 'accounts/register.html', {'form': form})
 
 

@@ -6,8 +6,6 @@
 
 {% block content %}
 
-
-
         <!-- Orders Table -->
         <div class="table-responsive">
             <table class="table table-striped table-bordered">
@@ -19,6 +17,7 @@
                         <th>Status</th>
                         <th>Payment Status</th>
                         <th>Actions</th>
+                        <th>Details</th> <!-- New column for the detail button -->
                     </tr>
                 </thead>
                 <tbody>
@@ -33,10 +32,13 @@
                                 <a href="{% url 'update_order_status' order.id %}" class="btn btn-warning btn-sm">Update Status</a>
                                 <a href="{% url 'admin_cancel_order' order.id %}" class="btn btn-danger btn-sm">Cancel Order</a>
                             </td>
+                            <td>
+                                  <a href="{% url 'order_detail' order.id %}" class="btn btn-info btn-sm">Order Details</a>
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
+
 {% endblock %}

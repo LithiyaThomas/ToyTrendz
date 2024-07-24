@@ -12,4 +12,5 @@ urlpatterns = [
     path('order_success/<uuid:order_uuid>/', views.order_success, name='order_success'),
     path('add-address/', views.add_address, name='add_address'),
     path('order/<uuid:order_uuid>/', views.order_detail, name='order_detail'),
+    path('return-order/<uuid:order_uuid>/', views.return_order, name='return_order'),
 ]

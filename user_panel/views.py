@@ -8,7 +8,7 @@ from django.views.generic import TemplateView
 from accounts.models import Address
 from django.urls import reverse_lazy
 from django.contrib.auth.views import PasswordChangeView
-from .forms import SimpleUserChangeForm
+from .forms import SimpleUserChangeForm,CustomPasswordChangeForm
 from django.contrib.auth import get_user_model
 from django.contrib import messages
 User = get_user_model()
@@ -183,5 +183,19 @@ class EditProfileView(LoginRequiredMixin, UpdateView):
         return super().form_valid(form)
 
 class ChangePasswordView(LoginRequiredMixin, PasswordChangeView):
+    form_class = CustomPasswordChangeForm
     template_name = 'userside/change_password.html'
     success_url = reverse_lazy('user_panel:user_profile')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Your password was changed successfully.')
+        return response
+
+    def form_invalid(self, form):
+        response = super().form_invalid(form)
+        # Display error messages if any
+        for field in form:
+            if field.errors:
+                messages.error(self.request, field.errors.as_text())
+        return response

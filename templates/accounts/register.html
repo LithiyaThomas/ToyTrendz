@@ -6,29 +6,72 @@
     <title>Join Us</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'accounts/css/styles.css' %}">
+    <style>
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: none;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .alert {
+            color: red;
+            margin-top: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #ff4081;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .sign-in-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
 </head>
 <body>
     <div class="modal">
         <div class="modal-content">
             {% if messages %}
-            {% for message in messages %}
-            <div class="alert alert-warning">{{ message }}</div>
-            {% endfor %}
+                {% for message in messages %}
+                    <div class="alert alert-warning">{{ message }}</div>
+                {% endfor %}
             {% endif %}
+
             <form id="join_form" method="POST" action="{% url 'user_register' %}">
                 {% csrf_token %}
-                {{ form.full_name }}
-                {{ form.username }}
-                {{ form.email }}
-                {{ form.phone }}
-                {{ form.password }}
-                {{ form.confirm_password }}
+
+                {% for field in form %}
+                    <div class="form-group">
+                        {{ field }}
+                        {% if field.errors %}
+                            <div class="alert alert-danger">
+                                {% for error in field.errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
                 <button type="submit" id="join_register">Send OTP</button>
             </form>
-            <p>Already have an account? <a href="{% url 'user_login' %}" id="sign_in">Sign In</a></p>
+
+            <div class="sign-in-link">
+                <p>Already have an account? <a href="{% url 'user_login' %}" id="sign_in">Sign In</a></p>
+            </div>
         </div>
     </div>
-    </div>
+
     <script src="{% static 'js/scripts.js' %}"></script>
 </body>
 </html>

@@ -1,0 +1,87 @@
+{% extends 'adminside/base.html' %}
+
+{% block title %}Order Detail{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+    <h2 class="mb-4">Order ID: <span style="font-size: 1rem; font-weight: normal;">{{ order.uuid }}</span></h2>
+
+    <!-- User Information Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>User Information</h4>
+        </div>
+        <div class="card-body">
+            <p><strong>Username:</strong> {{ order.user.username }}</p>
+            <p><strong>Email:</strong> {{ order.user.email }}</p>
+            <p><strong>Address:</strong> {{ order.address.address_line_1 }}</p>
+            <p><strong>Phone Number:</strong> {{ order.address.phone_number }}</p>
+        </div>
+    </div>
+
+    <!-- Order Items Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Order Items</h4>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order_items %}
+                        <tr>
+                            <td>
+                                {% if item.variant.productvariantimage_set.first %}
+                                    <img src="{{ item.variant.productvariantimage_set.first.image.url }}" alt="{{ item.product.product_name }}" class="product-image" style="max-width: 60px; height: auto; object-fit: cover;">
+                                {% else %}
+                                    <span class="text-muted">No image</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.product.product_name }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>${{ item.price|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Order Summary Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Order Summary</h4>
+        </div>
+        <div class="card-body">
+            <p><strong>Total Price:</strong> ${{ order.total_price|floatformat:2 }}</p>
+            <p><strong>Status:</strong> {{ order.status }}</p>
+            <p><strong>Payment Status:</strong> {{ order.payment_status }}</p>
+        </div>
+    </div>
+
+    <!-- Back Button -->
+    <div class="mt-4">
+        <a href="{% url 'admin_order_list' %}" class="btn btn-primary">Back to Orders List</a>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Ensure the style is applied with high specificity */
+    .table td .product-image {
+        max-width: 60px; /* Adjust size as needed */
+        height: auto; /* Keep aspect ratio */
+        object-fit: cover; /* Ensure the image covers the container */
+    }
+</style>
+{% endblock %}

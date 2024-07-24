@@ -51,7 +51,18 @@ def change_order_status(request, order_uuid, new_status):
 
     return redirect('order_detail', order_uuid=order_uuid)
 
-
+@login_required
+def return_order(request, order_uuid):
+    if request.method == "POST":
+        order = get_object_or_404(Order, uuid=order_uuid, user=request.user)
+        if order.status == 'Delivered':
+            # Add your return logic here
+            order.status = 'Return Requested'
+            order.save()
+            messages.success(request, "Return request submitted successfully.")
+        else:
+            messages.error(request, "This order cannot be returned.")
+    return redirect('order:order_detail', order_uuid=order_uuid)
 
 @login_required
 def cancel_order(request, order_uuid):

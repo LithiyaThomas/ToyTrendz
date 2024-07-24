@@ -110,3 +110,11 @@ def cancel_order(request, pk):
         order.save()
         return redirect('admin_order_list')
     return render(request, 'adminside/cancel_order.html', {'order': order})
+
+
+@user_passes_test(is_admin)
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def order_detail(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    order_items = OrderItem.objects.filter(order=order)
+    return render(request, 'adminside/order_detail.html', {'order': order, 'order_items': order_items})

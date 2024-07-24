@@ -221,11 +221,17 @@
                         </div>
                     {% endfor %}
 
-                    <div class="button-group">
-                        {% if order.status == 'Pending' or order.status == 'Confirmed'  or order.status == 'Shipped' %}
+                  <div class="button-group">
+                        {% if order.status == 'Pending' or order.status == 'Confirmed' or order.status == 'Shipped' %}
                             <form action="{% url 'order:cancel_order' order.uuid %}" method="POST" class="d-inline">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-danger btn-sm">Cancel Order</button>
+                            </form>
+                        {% endif %}
+                        {% if order.status == 'Delivered' %}
+                            <form action="{% url 'order:return_order' order.uuid %}" method="POST" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-warning btn-sm">Return Order</button>
                             </form>
                         {% endif %}
                         <a href="{% url 'order:order_detail' order.uuid %}" class="btn btn-info btn-sm">View Details</a>

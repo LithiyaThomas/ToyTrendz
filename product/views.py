@@ -153,16 +153,13 @@ class ProductVariantUpdateView(UpdateView):
 # Product Variant DeleteView
 
 class ProductVariantStatusToggleView(View):
-    def post(self, request, *args, **kwargs):
-        data = json.loads(request.body)
-        variant_id = data.get('variantId')
-        try:
-            variant = ProductVariant.objects.get(pk=variant_id)
-            variant.is_active = not variant.is_active
-            variant.save()
-            return JsonResponse({'status': variant.is_active})
-        except ProductVariant.DoesNotExist:
-            return JsonResponse({'error': 'Variant not found'}, status=404)
+    def get(self, request, *args, **kwargs):
+        variant_id = kwargs.get('pk')
+        variant = get_object_or_404(ProductVariant, pk=variant_id)
+        variant.is_active = not variant.is_active
+        variant.save()
+        return redirect(reverse_lazy('product:product_variants', kwargs={'product_id': variant.product.id}))
+
 
 # Product Variant ListView
 class ProductVariantListView(ListView):
@@ -170,7 +167,8 @@ class ProductVariantListView(ListView):
     context_object_name = 'variants'
 
     def get_queryset(self):
-        return ProductVariant.objects.filter(product_id=self.kwargs['product_id']).prefetch_related('productvariantimage_set')
+        # Order variants by id
+        return ProductVariant.objects.filter(product_id=self.kwargs['product_id']).order_by('id').prefetch_related('productvariantimage_set')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

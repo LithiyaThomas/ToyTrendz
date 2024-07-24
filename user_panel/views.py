@@ -13,6 +13,7 @@ from django.contrib.auth import get_user_model
 from django.contrib import messages
 User = get_user_model()
 
+
 class UserPanelProductListView(ListView):
     model = Product
     template_name = 'userside/product_list.html'
@@ -28,7 +29,7 @@ class UserPanelProductListView(ListView):
 
         query = self.request.GET.get('q')
         category_id = self.request.GET.get('category')
-        sort_by = self.request.GET.get('sort_by')
+        sort_by = self.request.GET.getlist('sort_by')  # Change to getlist to handle multiple values
 
         if query:
             queryset = queryset.filter(
@@ -39,39 +40,36 @@ class UserPanelProductListView(ListView):
         if category_id:
             queryset = queryset.filter(product_category_id=category_id)
 
+        # Apply sorting based on the selected checkboxes
         if sort_by:
-            if sort_by == 'popularity':
-                queryset = queryset.order_by('-total_reviews')
-            elif sort_by == 'price_low_high':
-                queryset = queryset.order_by('price')
-            elif sort_by == 'price_high_low':
-                queryset = queryset.order_by('-price')
-            elif sort_by == 'average_ratings':
-                queryset = queryset.order_by('-average_rating')
-            elif sort_by == 'new_arrivals':
-                queryset = queryset.order_by('-created_at')
-            elif sort_by == 'a_to_z':
-                queryset = queryset.order_by('product_name')
-            elif sort_by == 'z_to_a':
-                queryset = queryset.order_by('-product_name')
+            ordering = []
+            if 'popularity' in sort_by:
+                ordering.append('-total_reviews')
+            if 'price_low_high' in sort_by:
+                ordering.append('price')
+            if 'price_high_low' in sort_by:
+                ordering.append('-price')
+            if 'average_ratings' in sort_by:
+                ordering.append('-average_rating')
+            if 'new_arrivals' in sort_by:
+                ordering.append('-created_at')
+            if 'a_to_z' in sort_by:
+                ordering.append('product_name')
+            if 'z_to_a' in sort_by:
+                ordering.append('-product_name')
+
+            if ordering:
+                queryset = queryset.order_by(*ordering)
 
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['categories'] = Category.objects.all()
-        context['sort_by'] = self.request.GET.get('sort_by', '')
         context['search_query'] = self.request.GET.get('q', '')
-
-        # Add query parameters to context for maintaining state in pagination
-        context['query_params'] = self.request.GET.copy()
-        if 'page' in context['query_params']:
-            del context['query_params']['page']
-        if 'q' in context['query_params']:
-            del context['query_params']['q']
-
+        context['category_id'] = self.request.GET.get('category', '')
+        context['sort_by'] = self.request.GET.getlist('sort_by')
         return context
-
 
 class ProductDetailView(DetailView):
     model = Product

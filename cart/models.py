@@ -30,7 +30,6 @@ class CartItem(models.Model):
     def __str__(self):
         return f"{self.product.product_name} - {self.variant.colour_name} - {self.quantity}"
 
-
 class Wishlist(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     product_variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE)

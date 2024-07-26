@@ -271,7 +271,7 @@ def order_detail(request, order_uuid):
         'user': user,
         'address': address,
         'items': items,
-        'subtotal': subtotal,  # Add subtotal to the context
+        'subtotal': subtotal,
     }
 
     return render(request, 'order/order_detail.html', context)

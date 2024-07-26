@@ -13,6 +13,8 @@ from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.http import JsonResponse
 from cart.models import Wishlist
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
 User = get_user_model()
 
 
@@ -202,39 +204,48 @@ class ChangePasswordView(LoginRequiredMixin, PasswordChangeView):
 
 
 class AddToWishlistView(LoginRequiredMixin, View):
-    login_url = 'accounts:user_login'
+    login_url = 'user_login'
 
-    def post(self, request, *args, **kwargs):
-        variant_id = self.kwargs.get('variant_id')
-        variant = get_object_or_404(ProductVariant, id=variant_id)
-        wishlist, created = Wishlist.objects.get_or_create(user=request.user, variant=variant)
+    def post(self, request):
+        variant_id = request.POST.get('variant_id')
+        if not variant_id:
+            return JsonResponse({'success': False, 'message': 'Invalid request'})
 
-        if created:
-            return JsonResponse({'success': True, 'message': 'Product added to wishlist.'})
-        else:
-            return JsonResponse({'success': False, 'message': 'Product already in wishlist.'})
+        try:
+            variant = get_object_or_404(ProductVariant, id=variant_id)
+            wishlist_item, created = Wishlist.objects.get_or_create(user=request.user, product_variant=variant)
+
+            if created:
+                return JsonResponse({'success': True, 'message': 'Product added to wishlist', 'action': 'added'})
+            else:
+                wishlist_item.delete()
+                return JsonResponse({'success': True, 'message': 'Product removed from wishlist', 'action': 'removed'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
 
 
 class RemoveFromWishlistView(LoginRequiredMixin, View):
-    login_url = 'accounts:user_login'
+    login_url = 'user_login'
 
-    def post(self, request, *args, **kwargs):
-        variant_id = self.kwargs.get('variant_id')
-        variant = get_object_or_404(ProductVariant, id=variant_id)
-
+    def post(self, request, variant_id):
         try:
-            wishlist_item = Wishlist.objects.get(user=request.user, variant=variant)
+            # Debugging output
+            print(f"Trying to remove variant_id: {variant_id}")
+
+            wishlist_item = Wishlist.objects.get(user=request.user, product_variant_id=variant_id)
             wishlist_item.delete()
             return JsonResponse({'success': True, 'message': 'Product removed from wishlist.'})
         except Wishlist.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Product not found in wishlist.'})
+            # Debugging output
+            print(f"Wishlist item not found for variant_id: {variant_id}")
 
+            return JsonResponse({'success': False, 'message': 'Product not found in wishlist.'})
 
 class WishlistListView(LoginRequiredMixin, ListView):
     model = Wishlist
-    template_name = 'userside/wish-list.html'
-    context_object_name = 'wishlist_items'
-    login_url = 'accounts:user_login'
+    template_name = 'userside/wishlist.html'
+    context_object_name = 'wishlists'
+    login_url = 'user_login'
 
     def get_queryset(self):
         return Wishlist.objects.filter(user=self.request.user)

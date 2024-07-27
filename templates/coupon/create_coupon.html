@@ -1,27 +1,140 @@
-<!-- create_coupon.html -->
+{% extends 'adminside/base.html' %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Coupon</title>
-    <!-- Include Bootstrap CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+{% block title %}Coupon List{% endblock %}
+
+{% block content %}
+
+    <style>
+        .form-group {
+            display: flex;
+            align-items: center;
+        }
+        .form-group .form-control {
+            flex: 1;
+        }
+        .form-group .btn {
+            margin-left: 10px; /* Adjust spacing between the input and button */
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
         <h2>Create Coupon</h2>
-        <form method="post">
+        <div id="form-response"></div> <!-- Container for AJAX responses -->
+        <form id="coupon-form" method="post" action="{% url 'coupon:create_coupon' %}">
             {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit" class="btn btn-primary">Create Coupon</button>
+
+            <!-- Coupon Code Field -->
+            <div class="form-group">
+                <input type="text" name="code" id="id_code" class="form-control" placeholder="Coupon Code" value="{{ form.code.value|default:'' }}">
+                <button id="refresh-code" class="btn btn-secondary">Get Code</button> <!-- Refresh button -->
+            </div>
+
+            <!-- Start Date Field -->
+            <div class="form-group">
+                <label for="id_start_date">Start Date:</label>
+                <input type="datetime-local" name="start_date" id="id_start_date" class="form-control" value="{{ form.start_date.value|default:'' }}">
+            </div>
+
+            <!-- Expiry Date Field -->
+            <div class="form-group">
+                <label for="id_expiry_date">Expiry Date:</label>
+                <input type="datetime-local" name="expiry_date" id="id_expiry_date" class="form-control" value="{{ form.expiry_date.value|default:'' }}">
+            </div>
+
+            <!-- Offer Percentage Field -->
+            <div class="form-group">
+                <label for="id_offer_percentage">Offer Percentage:</label>
+                <input type="number" name="offer_percentage" id="id_offer_percentage" class="form-control" step="0.01" value="{{ form.offer_percentage.value|default:'' }}">
+            </div>
+
+            <!-- Minimum Order Amount Field -->
+            <div class="form-group">
+                <label for="id_minimum_order_amount">Minimum Order Amount:</label>
+                <input type="number" name="minimum_order_amount" id="id_minimum_order_amount" class="form-control" step="0.01" value="{{ form.minimum_order_amount.value|default:'' }}">
+            </div>
+
+            <!-- Maximum Order Amount Field -->
+            <div class="form-group">
+                <label for="id_maximum_order_amount">Maximum Order Amount:</label>
+                <input type="number" name="maximum_order_amount" id="id_maximum_order_amount" class="form-control" step="0.01" value="{{ form.maximum_order_amount.value|default:'' }}">
+            </div>
+
+            <!-- Overall Usage Limit Field -->
+            <div class="form-group">
+                <label for="id_overall_usage_limit">Overall Usage Limit:</label>
+                <input type="number" name="overall_usage_limit" id="id_overall_usage_limit" class="form-control" value="{{ form.overall_usage_limit.value|default:'' }}">
+            </div>
+
+            <!-- Limit Per User Field -->
+            <div class="form-group">
+                <label for="id_limit_per_user">Limit Per User:</label>
+                <input type="number" name="limit_per_user" id="id_limit_per_user" class="form-control" value="{{ form.limit_per_user.value|default:'' }}">
+            </div>
+
+            <!-- Active Status Field -->
+            <div class="form-group">
+                <label for="id_is_active">Active:</label>
+                <input type="checkbox" name="is_active" id="id_is_active" class="form-check-input" {% if form.is_active.value %}checked{% endif %}>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Create Coupon</button>
+            </div>
         </form>
     </div>
 
-    <!-- Include Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@1.16.1/dist/umd/popper.min.js" integrity="sha384-3eS7VRyqiImOJjLHo6PzRjsEJXQYoFZtKx0p4z+O8tcA2EXZCrDteH7nYz0Nqfs" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8sh/jFcY/A0+0P7PqUst1Kvq2rsUpmJ7f4IH4u" crossorigin="anonymous"></script>
-</body>
-</html>
+    <!-- Include jQuery and Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+    $(document).ready(function() {
+        $('#refresh-code').on('click', function(event) {
+            event.preventDefault(); // Prevent default button action
+
+            $.ajax({
+                url: '{% url "coupon:generate_coupon_code" %}', // URL of the view handling the code generation
+                type: 'GET',
+                success: function(response) {
+                    $('#id_code').val(response.code); // Update the coupon code field with the new code
+                },
+                error: function(xhr, status, error) {
+                    $('#form-response').html('<div class="alert alert-danger">Failed to refresh code. Please try again.</div>');
+                }
+            });
+        });
+
+        $('#coupon-form').on('submit', function(event) {
+            event.preventDefault(); // Prevent default form submission
+            var form = $(this);
+
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                data: form.serialize(),
+                success: function(response) {
+                    if (response.status === 'success') {
+                        $('#form-response').html('<div class="alert alert-success">Coupon created successfully. Redirecting...</div>');
+                        setTimeout(function() {
+                            window.location.href = response.redirect_url; // Redirect to the list_coupons page
+                        }, 2000); // Delay to show the success message before redirecting
+                    }
+                },
+                error: function(xhr, status, error) {
+                    var errors = JSON.parse(xhr.responseText).errors;
+                    var errorHtml = '<div class="alert alert-danger">Please correct the following errors:<ul>';
+                    $.each(errors, function(field, messages) {
+                        $.each(messages, function(index, message) {
+                            errorHtml += '<li>' + message + '</li>';
+                        });
+                    });
+                    errorHtml += '</ul></div>';
+                    $('#form-response').html(errorHtml);
+                }
+            });
+        });
+    });
+    </script>
+{% endblock %}

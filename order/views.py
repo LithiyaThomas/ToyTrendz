@@ -6,6 +6,8 @@ from .models import Order, OrderItem, Payment, Address
 from django.db import transaction
 from .models import Address
 from cart.models import Cart, CartItem
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 
 
@@ -127,7 +129,7 @@ def proceed_to_payment(request):
         cart_items = []
         cart_total = 0
 
-    payment_options = ['Credit Card', 'Debit Card', 'PayPal', 'Cash on Delivery']
+    payment_options = ['wallet', 'online_payment', 'Cash on Delivery']
 
     return render(request, 'order/proceed_to_payment.html', {
         'addresses': addresses,
@@ -136,6 +138,10 @@ def proceed_to_payment(request):
         'payment_options': payment_options
     })
 
+
+import razorpay
+from django.conf import settings
+from django.urls import reverse
 
 @login_required
 def place_order(request):
@@ -171,7 +177,9 @@ def place_order(request):
                     user=request.user,
                     total_price=cart_total,
                     payment_method=payment_method,
-                    address=address
+                    address=address,
+                    status='Pending',
+                    payment_status='Pending'
                 )
 
                 for item in cart_items:
@@ -192,7 +200,43 @@ def place_order(request):
                 cart_items.delete()
                 cart.delete()
 
-                messages.success(request, "Your order has been placed successfully!")
+                if payment_method == 'online_payment':
+                    # Create Razorpay order
+                    client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+                    razorpay_order = client.order.create({
+                        'amount': int(cart_total * 100),  # Amount in paise
+                        'currency': 'INR',
+                        'payment_capture': '1'
+                    })
+                    order.razorpay_order_id = razorpay_order['id']
+                    order.save()
+
+                    # Render the Razorpay payment page
+                    return render(request, 'order/razorpay_payment.html', {
+                        'order': order,
+                        'razorpay_order_id': razorpay_order['id'],
+                        'razorpay_merchant_key': settings.RAZORPAY_KEY_ID,
+                        'callback_url': request.build_absolute_uri(reverse('order:razorpay_callback'))
+                    })
+
+                elif payment_method == 'wallet':
+                    if request.user.wallet.balance >= cart_total:
+                        request.user.wallet.balance -= cart_total
+                        request.user.wallet.save()
+                        order.payment_status = 'Completed'
+                        order.status = 'Confirmed'
+                        order.save()
+                        messages.success(request, "Payment successful and order confirmed!")
+                    else:
+                        messages.error(request, "Insufficient wallet balance.")
+                        order.delete()  # Delete the order if payment fails
+                        return redirect('order:checkout')
+
+                else:  # Cash on Delivery
+                    order.status = 'Confirmed'
+                    order.save()
+                    messages.success(request, "Your order has been placed successfully!")
+
                 return redirect('order:order_success', order_uuid=order.uuid)
 
         except ValueError as e:
@@ -204,6 +248,46 @@ def place_order(request):
 
     else:
         return redirect('order:checkout')
+
+
+@csrf_exempt
+def razorpay_callback(request):
+    if request.method == "POST":
+        payment_id = request.POST.get('razorpay_payment_id', '')
+        razorpay_order_id = request.POST.get('razorpay_order_id', '')
+        signature = request.POST.get('razorpay_signature', '')
+
+        client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+
+        try:
+            order = Order.objects.get(razorpay_order_id=razorpay_order_id)
+            params_dict = {
+                'razorpay_order_id': razorpay_order_id,
+                'razorpay_payment_id': payment_id,
+                'razorpay_signature': signature
+            }
+            client.utility.verify_payment_signature(params_dict)
+
+            order.payment_status = 'Completed'
+            order.status = 'Confirmed'
+            order.save()
+
+            messages.success(request, "Payment successful and order confirmed!")
+            return redirect('order:order_success', order_uuid=order.uuid)
+        except:
+            messages.error(request, "Payment verification failed.")
+            return redirect('order:order_failure', order_uuid=order.uuid)
+
+    return HttpResponse(status=400)
+
+
+def order_failure(request, order_uuid):
+    order = get_object_or_404(Order, uuid=order_uuid)
+    context = {
+        'order': order,
+    }
+    return render(request, 'order/order_failure.html', context)
+
 
 @login_required
 def order_success(request, order_uuid):

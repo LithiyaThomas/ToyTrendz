@@ -13,4 +13,6 @@ urlpatterns = [
     path('add-address/', views.add_address, name='add_address'),
     path('order/<uuid:order_uuid>/', views.order_detail, name='order_detail'),
     path('return-order/<uuid:order_uuid>/', views.return_order, name='return_order'),
+    path('order-failure/<uuid:order_uuid>/', views.order_failure, name='order_failure'),
+    path('razorpay-callback/', views.razorpay_callback, name='razorpay_callback'),
 ]

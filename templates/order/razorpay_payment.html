@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Razorpay Payment</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    <h1>Complete Your Payment</h1>
+        <script>
+            var options = {
+            "key": "{{ razorpay_merchant_key }}",
+            "amount": "{{ order.total_price|floatformat:2 }}",
+            "currency": "INR",
+            "name": "Your Company Name",
+            "description": "Order Payment",
+            "order_id": "{{ razorpay_order_id }}",
+            "callback_url": "{% url 'order:razorpay_callback' %}?order_id={{ razorpay_order_id }}",
+            "handler": function (response) {
+                console.log('Payment successful:', response); // For debugging
+            },
+            "theme": {
+                "color": "#3399cc"
+            }
+        };
+        var rzp1 = new Razorpay(options);
+        rzp1.open();
+
+        </script>
+</body>
+</html>

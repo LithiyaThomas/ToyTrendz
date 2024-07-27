@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Failure</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="{% url 'home' %}">Home</a></li>
+                <li><a href="{% url 'user_panel:order_history' %}">Order History</a></li>
+                <li><a href="{% url 'user_login' %}">Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="order-failure">
+            <h1>Order Failed</h1>
+            <p>We are sorry, but your order could not be completed due to an issue with the payment or another problem.</p>
+
+            <p>Please try again later or contact our support team if you need further assistance.</p>
+
+            <div class="order-failure-actions">
+                <a href="{% url 'home' %}" class="btn">Return to Home</a>
+                <a href="{% url 'user_panel:order_history' %}" class="btn">View Order History</a>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Your Company Name. All rights reserved.</p>
+    </footer>
+</body>
+</html>

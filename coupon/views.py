@@ -9,7 +9,7 @@ import string
 from django.urls import reverse
 from django.contrib import messages
 from django.http import HttpResponseBadRequest
-from django.views.decorators.http import require_POST
+
 
 @login_required
 def list_coupons(request):
@@ -32,7 +32,7 @@ def create_coupon(request):
         if form.is_valid():
             form.save()
             if request.is_ajax():
-                redirect_url = reverse('coupon:list_coupons')  # Generate the URL for redirection
+                redirect_url = reverse('coupon:list_coupons')
                 return JsonResponse({'status': 'success', 'redirect_url': redirect_url})
             return redirect('coupon:list_coupons')
         if request.is_ajax():
@@ -75,9 +75,9 @@ def edit_coupon(request, coupon_id):
     coupon = get_object_or_404(Coupon, id=coupon_id)
     if request.method == 'POST':
         form = CouponForm(request.POST, instance=coupon)
-        print('hi')
+
         if form.is_valid():
-            print(form.is_valid())
+
             form.save()
             return redirect('coupon:list_coupons')
     else:

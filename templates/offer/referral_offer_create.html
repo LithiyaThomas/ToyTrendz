@@ -1,0 +1,13 @@
+{% extends "adminside/base.html" %}
+
+{% block title %} Referral Offer{% endblock %}
+
+{% block content %}
+    <h1>Create Referral Offer</h1>
+    <form method="post" class="form-group">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Save</button>
+    </form>
+    <a href="{% url 'referral_offer_list' %}" class="btn btn-secondary mt-3">Back to List</a>
+{% endblock %}

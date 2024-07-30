@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 from order.models import Order, OrderItem
 from .forms import OrderStatusForm
 from django.contrib.auth.decorators import user_passes_test
-
+from datetime import datetime
 
 def admin_login(request):
     if request.method == 'POST':
@@ -90,16 +90,19 @@ def order_list(request):
     orders = Order.objects.all().order_by('-created_at')
     return render(request, 'adminside/order_list.html', {'orders': orders})
 
+
 @user_passes_test(is_admin)
 def update_order_status(request, pk):
     order = get_object_or_404(Order, pk=pk)
+
     if request.method == 'POST':
-        form = OrderStatusForm(request.POST, instance=order)
+        form = OrderStatusForm(request.POST, instance=order, current_status=order.status)
         if form.is_valid():
             form.save()
             return redirect('admin_order_list')
     else:
-        form = OrderStatusForm(instance=order)
+        form = OrderStatusForm(instance=order, current_status=order.status)
+
     return render(request, 'adminside/update_order_status.html', {'form': form, 'order': order})
 
 @user_passes_test(is_admin)
@@ -118,3 +121,24 @@ def order_detail(request, pk):
     order = get_object_or_404(Order, pk=pk)
     order_items = OrderItem.objects.filter(order=order)
     return render(request, 'adminside/order_detail.html', {'order': order, 'order_items': order_items})
+
+
+def sales_report(request):
+    if request.method == 'POST':
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+
+        if start_date and end_date:
+            try:
+                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            except ValueError:
+                return redirect('sales_report')
+
+
+            orders = Order.objects.filter(created_at__date__range=[start_date, end_date], status="Delivered")
+            return render(request, 'adminside/salesreport.html', {'orders': orders})
+
+
+    orders = Order.objects.filter(status="Delivered")
+    return render(request, 'adminside/salesreport.html', {'orders': orders})

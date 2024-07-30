@@ -12,7 +12,7 @@ import json
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_control
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+
 def is_admin(user):
     return user.is_superuser
 
@@ -87,10 +87,10 @@ class ProductDetailView(DetailView):
 
 
 
-        # Fetch all variants with their images
+
         variants = ProductVariant.objects.filter(product=product).prefetch_related('productvariantimage_set')
         
-        # Prepare variant data for JSON serialization
+
         variant_data = []
         for variant in variants:
             variant_images = [{'id': img.id, 'image': img.image.url} for img in variant.productvariantimage_set.all()]
@@ -167,7 +167,7 @@ class ProductVariantListView(ListView):
     context_object_name = 'variants'
 
     def get_queryset(self):
-        # Order variants by id
+
         return ProductVariant.objects.filter(product_id=self.kwargs['product_id']).order_by('id').prefetch_related('productvariantimage_set')
 
     def get_context_data(self, **kwargs):

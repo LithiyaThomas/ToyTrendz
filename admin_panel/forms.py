@@ -13,10 +13,21 @@ class AdminLoginForm(forms.Form):
     }))
 
 
+
 class OrderStatusForm(forms.ModelForm):
     class Meta:
         model = Order
         fields = ['status']
-        widgets = {
-            'status': forms.Select(choices=Order.STATUS_CHOICES),
-        }
+
+    def __init__(self, *args, **kwargs):
+        current_status = kwargs.pop('current_status', None)
+        super().__init__(*args, **kwargs)
+
+        all_status_choices = Order.STATUS_CHOICES
+
+        if current_status == 'Cancelled':
+            self.fields['status'].choices = [choice for choice in all_status_choices if choice[0] == 'Cancelled']
+        else:
+
+            self.fields['status'].choices = all_status_choices
+

@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
-
+from django.db import transaction
 
 # Create your models here.
 
@@ -79,7 +79,7 @@ class Address(models.Model):
     full_name = models.CharField(max_length=100)
     phone_number = models.CharField(max_length=20)
     address_line_1 = models.CharField(max_length=100)
-    address_line_2 = models.CharField(max_length=100, blank=True, null=True)  # optional field
+    address_line_2 = models.CharField(max_length=100, blank=True, null=True)
     city = models.CharField(max_length=50)
     state = models.CharField(max_length=50)
     postal_code = models.CharField(max_length=20)
@@ -112,15 +112,31 @@ class WalletTransaction(models.Model):
     transaction_type = models.CharField(max_length=50, choices=Wallet.TRANSACTION_CHOICES)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     timestamp = models.DateTimeField(auto_now_add=True)
-    description = models.CharField(max_length=255)
+    description = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
         return f"{self.transaction_type} of {self.amount} for {self.wallet.user.username} at {self.timestamp}"
 
     def save(self, *args, **kwargs):
+
         if not self.description:
             if self.transaction_type == 'Debit':
                 self.description = _('Debit of %(amount)s from wallet') % {'amount': self.amount}
             elif self.transaction_type == 'Credit':
                 self.description = _('Credit of %(amount)s to wallet') % {'amount': self.amount}
         super().save(*args, **kwargs)
+
+    @staticmethod
+    def handle_order_cancellation(wallet, order_amount):
+        with transaction.atomic():
+
+            WalletTransaction.objects.create(
+                wallet=wallet,
+                amount=order_amount,
+                transaction_type='Credit',
+                description=_('Refund for canceled order')
+            )
+
+
+            wallet.balance += order_amount
+            wallet.save()

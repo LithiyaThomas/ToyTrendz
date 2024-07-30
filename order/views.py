@@ -2,27 +2,32 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from .models import Order, OrderItem, Payment, Address
+from .models import Order, OrderItem, Payment
 from django.db import transaction
 from .models import Address
 from cart.models import Cart, CartItem
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from accounts.models import  Wallet, WalletTransaction
+import razorpay
+from django.conf import settings
 from django.urls import reverse
-
+from coupon.models import Coupon
 
 @login_required
 def list_orders(request):
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
 
-    # Prefetch related items to avoid N+1 queries
+
     orders = orders.prefetch_related(
         'items',
         'items__product',
         'items__variant'
     )
 
-    # Calculate subtotal for each order
+
     for order in orders:
         order.subtotal = sum(item.price * item.quantity for item in order.items.all())
 
@@ -38,12 +43,10 @@ def list_orders(request):
 
     context = {
         'orders': paginated_orders,
-        'order_count': orders.count(),  # Add total order count for reference
+        'order_count': orders.count(),
     }
 
     return render(request, 'order/order_list.html', context)
-
-
 @login_required
 def change_order_status(request, order_uuid, new_status):
     order = get_object_or_404(Order, uuid=order_uuid, user=request.user)
@@ -63,7 +66,7 @@ def return_order(request, order_uuid):
     if request.method == "POST":
         order = get_object_or_404(Order, uuid=order_uuid, user=request.user)
         if order.status == 'Delivered':
-            # Add your return logic here
+
             order.status = 'Return Requested'
             order.save()
             messages.success(request, "Return request submitted successfully.")
@@ -78,23 +81,26 @@ def cancel_order(request, order_uuid):
     if request.method == "POST":
         if order.status in ['Pending', 'Confirmed', 'Shipped']:
             with transaction.atomic():
-                # Update stock levels for each item in the order
+
                 for item in order.items.all():
                     if item.variant:
                         variant = item.variant
                         variant.variant_stock += item.quantity
                         variant.save()
 
-                # Update the order status
+
                 order.status = 'Cancelled'
                 order.save()
 
-                # Handle payment refund if applicable
-                if order.payment_method in ['online_payment', 'wallet']:
-                    amount = order.total_price
+
+                if order.payment_method == 'wallet':
+                    wallet = get_object_or_404(Wallet, user=request.user)
+                    WalletTransaction.handle_order_cancellation(wallet, order.total_price)
+
+                elif order.payment_method == 'online_payment':
                     Payment.objects.create(
                         order=order,
-                        amount_paid=amount,
+                        amount_paid=order.total_price,
                         payment_method=order.payment_method,
                         transaction_id=f"REFUND-{order.uuid}"
                     )
@@ -139,9 +145,7 @@ def proceed_to_payment(request):
     })
 
 
-import razorpay
-from django.conf import settings
-from django.urls import reverse
+
 
 @login_required
 def place_order(request):
@@ -201,17 +205,17 @@ def place_order(request):
                 cart.delete()
 
                 if payment_method == 'online_payment':
-                    # Create Razorpay order
+
                     client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
                     razorpay_order = client.order.create({
-                        'amount': int(cart_total * 100),  # Amount in paise
+                        'amount': int(cart_total * 100),
                         'currency': 'INR',
                         'payment_capture': '1'
                     })
                     order.razorpay_order_id = razorpay_order['id']
                     order.save()
 
-                    # Render the Razorpay payment page
+
                     return render(request, 'order/razorpay_payment.html', {
                         'order': order,
                         'razorpay_order_id': razorpay_order['id'],
@@ -229,7 +233,7 @@ def place_order(request):
                         messages.success(request, "Payment successful and order confirmed!")
                     else:
                         messages.error(request, "Insufficient wallet balance.")
-                        order.delete()  # Delete the order if payment fails
+                        order.delete()
                         return redirect('order:checkout')
 
                 else:  # Cash on Delivery
@@ -260,7 +264,10 @@ def razorpay_callback(request):
         client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 
         try:
+
             order = Order.objects.get(razorpay_order_id=razorpay_order_id)
+
+
             params_dict = {
                 'razorpay_order_id': razorpay_order_id,
                 'razorpay_payment_id': payment_id,
@@ -268,15 +275,18 @@ def razorpay_callback(request):
             }
             client.utility.verify_payment_signature(params_dict)
 
+
             order.payment_status = 'Completed'
             order.status = 'Confirmed'
             order.save()
 
-            messages.success(request, "Payment successful and order confirmed!")
             return redirect('order:order_success', order_uuid=order.uuid)
-        except:
-            messages.error(request, "Payment verification failed.")
+        except Order.DoesNotExist:
             return redirect('order:order_failure', order_uuid=order.uuid)
+        except razorpay.errors.SignatureVerificationError:
+            return redirect('order:order_failure', order_uuid=order.uuid)
+        except Exception as e:
+            return redirect('order:order_failure', order_uuid=razorpay_order_id)
 
     return HttpResponse(status=400)
 
@@ -299,10 +309,9 @@ def order_success(request, order_uuid):
     }
     return render(request, 'order/order_success.html', context)
 
-
 def add_address(request):
     if request.method == 'POST':
-        # Extract form data
+
         full_name=request.POST.get('full_name')
         phone_number=request.POST.get('phone_number')
         address_line_1 = request.POST.get('address_line_1')
@@ -333,7 +342,6 @@ def add_address(request):
         except Exception as e:
             messages.error(request, f'Error adding new address: {str(e)}')
 
-    # Redirect to cart checkout page
     return redirect(reverse('order:checkout'))
 
 
@@ -341,13 +349,13 @@ def add_address(request):
 def order_detail(request, order_uuid):
     order = get_object_or_404(Order, uuid=order_uuid, user=request.user)
 
-    # User information
+
     user = order.user
     address = order.address
 
     items = OrderItem.objects.filter(order=order)
 
-    # Calculate subtotal
+
     subtotal = sum(item.price * item.quantity for item in items)
 
     context = {
@@ -359,3 +367,68 @@ def order_detail(request, order_uuid):
     }
 
     return render(request, 'order/order_detail.html', context)
+
+
+@require_POST
+def apply_coupon(request):
+    coupon_code = request.POST.get('coupon_code', '').strip()
+    if not coupon_code:
+        return JsonResponse({'success': False, 'message': 'Coupon code is required.'})
+
+    try:
+        coupon = Coupon.objects.get(code=coupon_code, is_active=True)
+
+
+        if coupon.is_expired():
+            return JsonResponse({'success': False, 'message': 'This coupon has expired.'})
+
+
+        if coupon.remaining_usage() <= 0:
+            return JsonResponse({'success': False, 'message': 'This coupon has reached its usage limit.'})
+
+
+        if not coupon.can_be_used_by_user(request.user):
+            return JsonResponse(
+                {'success': False, 'message': 'You have already used this coupon the maximum number of times.'})
+
+
+        cart_total = get_cart_total(request.user)
+
+
+        if cart_total < coupon.minimum_order_amount:
+            return JsonResponse({'success': False,
+                                 'message': f'Order total must be at least ${coupon.minimum_order_amount} to use this coupon.'})
+
+        if coupon.maximum_order_amount > 0 and cart_total > coupon.maximum_order_amount:
+            return JsonResponse({'success': False,
+                                 'message': f'Order total must not exceed ${coupon.maximum_order_amount} to use this coupon.'})
+
+
+        discount = cart_total * (coupon.offer_percentage / 100)
+        new_total = cart_total - discount
+        print(discount)
+        print(new_total)
+
+        new_total = round(new_total, 2)
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Coupon applied successfully!',
+            'new_total': new_total,
+            'discount': discount
+        })
+
+    except Coupon.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Invalid coupon code.'})
+
+
+def get_cart_total(user):
+    try:
+        cart = Cart.objects.get(user=user)
+        cart_items = CartItem.objects.filter(cart=cart)
+        total = sum(item.quantity * item.variant.product.offer_price for item in cart_items)
+        return total
+    except Cart.DoesNotExist:
+        return 0
+
+

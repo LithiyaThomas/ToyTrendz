@@ -21,13 +21,27 @@
   <component name="ChangeListManager">
     <list default="true" id="1bd12e59-14b0-4c90-96db-f9391668bcc7" name="Default Changelist" comment="added product">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coupon/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/coupon/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coupon/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/coupon/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ToyTrendz/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/ToyTrendz/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ToyTrendz/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/ToyTrendz/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/admin_panel/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/admin_panel/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/admin_panel/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/admin_panel/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/admin_panel/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/admin_panel/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coupon/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/coupon/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/coupon/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/coupon/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/order/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/order/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/order/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/order/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/product/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/product/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/product/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/product/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/adminside/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/adminside/base.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/coupon/coupon_edit.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/coupon/coupon_edit.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/coupon/coupon_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/coupon/coupon_list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/adminside/update_order_status.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/adminside/update_order_status.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/coupon/create_coupon.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/coupon/create_coupon.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/order/order_failure.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/order/order_failure.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/order/proceed_to_payment.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/order/proceed_to_payment.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/order/razorpay_payment.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/order/razorpay_payment.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/user_panel/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/user_panel/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/user_panel/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/user_panel/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

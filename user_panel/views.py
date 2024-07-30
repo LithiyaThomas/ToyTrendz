@@ -13,8 +13,7 @@ from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.http import JsonResponse
 from cart.models import Wishlist
-from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required
+
 User = get_user_model()
 
 
@@ -44,7 +43,7 @@ class UserPanelProductListView(ListView):
         if category_id:
             queryset = queryset.filter(product_category_id=category_id)
 
-        # Apply sorting based on the selected checkboxes
+
         if sort_by:
             ordering = []
             if 'popularity' in sort_by:
@@ -84,10 +83,10 @@ class ProductDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         product = self.object
 
-        # Fetch ratings for the product
+
         ratings = Rating.objects.filter(product=product)
 
-        # Calculate average rating if ratings exist
+
         if ratings.exists():
             average_rating = ratings.aggregate(Avg('rating'))['rating__avg']
             product.average_rating = round(average_rating, 2)
@@ -97,17 +96,17 @@ class ProductDetailView(DetailView):
         # Fetch thumbnail image if available
         context['thumbnail_image'] = product.thumbnail.url if product.thumbnail else None
 
-        # Fetch variant images
+
         context['variant_images'] = ProductVariantImage.objects.filter(variant__product=product)
 
-        # Fetch product variants
+
         variants = ProductVariant.objects.filter(product=product)
         context['variants'] = variants
 
-        # Set the selected variant (default to the first one)
+
         context['selected_variant'] = variants.first()
 
-        # Fetch images for the selected variant
+
         if context['selected_variant']:
             context['selected_variant_images'] = ProductVariantImage.objects.filter(variant=context['selected_variant'])
 
@@ -229,14 +228,14 @@ class RemoveFromWishlistView(LoginRequiredMixin, View):
 
     def post(self, request, variant_id):
         try:
-            # Debugging output
+
             print(f"Trying to remove variant_id: {variant_id}")
 
             wishlist_item = Wishlist.objects.get(user=request.user, product_variant_id=variant_id)
             wishlist_item.delete()
             return JsonResponse({'success': True, 'message': 'Product removed from wishlist.'})
         except Wishlist.DoesNotExist:
-            # Debugging output
+
             print(f"Wishlist item not found for variant_id: {variant_id}")
 
             return JsonResponse({'success': False, 'message': 'Product not found in wishlist.'})

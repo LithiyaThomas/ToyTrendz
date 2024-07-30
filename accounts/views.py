@@ -15,6 +15,7 @@ from django.urls import reverse
 from django.contrib.auth import logout
 from product.models import Product, Category
 from django.db.models import Q
+
 # Generate a random OTP
 def generate_otp():
     return random.randint(100000, 999999)
@@ -60,7 +61,7 @@ def user_register(request):
             request.session['otp_creation_time'] = timezone.now().isoformat()
             return redirect('verify_otp')
         else:
-            # Form is invalid, display errors
+
             messages.error(request, 'Registration failed. Please correct the errors below.')
     else:
         form = RegisterForm()
@@ -222,7 +223,7 @@ def select_address(request):
 
             return redirect(reverse('proceed_to_payment', kwargs={'address_id': selected_address.id}))
         except Address.DoesNotExist:
-            # Handle case where selected address does not exist for the current user
+
             messages.error(request, 'Selected address does not exist.')
             return redirect(reverse('select_address'))
 

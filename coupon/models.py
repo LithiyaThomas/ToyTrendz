@@ -46,7 +46,7 @@ class Coupon(models.Model):
             self.save()
 
     def can_be_used_by_user(self, user):
-        # Assuming you have a CouponUsage model to track user-specific usage
+
         from .models import CouponUsage
         user_usage_count = CouponUsage.objects.filter(coupon=self, user=user).count()
         return user_usage_count < self.limit_per_user
@@ -55,10 +55,10 @@ class Coupon(models.Model):
         return self.code
 
     def clean(self):
-        # Ensure start_date is less than expiry_date
+
         if self.start_date >= self.expiry_date:
             raise ValidationError('Start date must be before expiry date.')
-        # Ensure limits are logical
+
         if self.limit_per_user > self.overall_usage_limit:
             raise ValidationError('Limit per user cannot be greater than overall usage limit.')
 

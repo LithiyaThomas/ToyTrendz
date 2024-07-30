@@ -9,7 +9,7 @@ User = get_user_model()
 
 
 class SimpleUserChangeForm(forms.ModelForm):
-    # Regular expression for validating phone numbers (basic example)
+
     phone_validator = RegexValidator(
         regex=r'^\+?1?\d{9,15}$',
         message=_('Phone number must be entered in the format: "+999999999". Up to 15 digits allowed.')
@@ -27,7 +27,7 @@ class SimpleUserChangeForm(forms.ModelForm):
     def clean_full_name(self):
         full_name = self.cleaned_data.get('full_name')
         if full_name:
-            # Remove leading and trailing spaces and check if empty
+
             stripped_name = full_name.strip()
             if not stripped_name:
                 raise ValidationError(_('Full name cannot be empty or consist of spaces.'))
@@ -36,7 +36,7 @@ class SimpleUserChangeForm(forms.ModelForm):
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
         if phone:
-            # Validate phone number format
+
             self.phone_validator(phone)
 
             # Check if phone number is not all zeros
@@ -70,7 +70,7 @@ class CustomPasswordChangeForm(PasswordChangeForm):
     def clean_new_password1(self):
         password = self.cleaned_data.get('new_password1')
         if password:
-            # Add custom password validation here
+
             if len(password) < 8:
                 raise ValidationError(_('Password must be at least 8 characters long.'))
             if not any(char.isalpha() for char in password):

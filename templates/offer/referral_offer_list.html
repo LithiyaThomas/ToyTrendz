@@ -1,0 +1,68 @@
+{% extends "adminside/base.html" %}
+
+{% block title %}Referral Offers{% endblock %}
+
+{% block content %}
+    <h1>Referral Offers List</h1>
+    <a href="{% url 'referral_offer_create' %}" class="btn btn-primary mb-3">Create New Offer</a>
+    <a href="{% url 'category_offer_list' %}" class="btn btn-secondary mb-3">Back to Category Offers List</a>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Referrer Reward</th>
+                <th>Referee Reward</th>
+                <th>Eligibility Conditions</th>
+                <th>Expiration Date</th>
+                <th>Referrer</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for offer in offers %}
+            <tr>
+                <td>{{ offer.name }}</td>
+                <td>{{ offer.referrer_reward }}</td>
+                <td>{{ offer.referee_reward }}</td>
+                <td>{{ offer.eligibility_conditions }}</td>
+                <td>{{ offer.expiration_date }}</td>
+<!--                <td>{{ offer.referrer.username }}</td>-->
+                <td>
+                    <a href="{% url 'referral_offer_update' offer.id %}" class="btn btn-warning btn-sm">Edit</a>
+                    <form action="{% url 'referral_offer_delete' offer.id %}" method="post" style="display:inline;" class="delete-form">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteForms = document.querySelectorAll('.delete-form');
+            deleteForms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const offerName = this.closest('tr').querySelector('td:first-child').textContent;
+
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: `Do you want to delete the offer "${offerName}"?`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Yes, delete it!'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            this.submit();
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+{% endblock %}

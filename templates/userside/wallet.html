@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Wallet</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .bg-custom-pink { background-color: #ed54a4 !important; }
+        .text-custom-pink { color: #ed54a4 !important; }
+    </style>
+</head>
+<body>
+    <div class="card h-100 border-0 shadow">
+        <div class="card-body">
+            <h2 class="card-title text-custom-pink mb-4">My Wallet</h2>
+
+            <div class="mb-4">
+                <h3>Current Balance</h3>
+                <h2 class="text-custom-pink">₹{{ wallet.balance }}</h2>
+
+            </div>
+
+            <div class="mb-4">
+                <h3>Transaction Summary</h3>
+                <p>Total Credit: ₹{{ total_credit }}</p>
+                <p>Total Debit: ₹{{ total_debit }}</p>
+            </div>
+
+            <div class="mb-4">
+                <h3>Transaction History</h3>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in transactions %}
+                        <tr>
+                            <td>{{ transaction.timestamp }}</td>
+                            <td>{{ transaction.transaction_type }}</td>
+                            <td>₹{{ transaction.amount }}</td>
+
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4">No transactions found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <nav aria-label="Transaction pagination">
+                    <ul class="pagination">
+                        {% if transactions.has_previous %}
+                            <li class="page-item"><a class="page-link" href="?page=1">&laquo; first</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ transactions.previous_page_number }}">previous</a></li>
+                        {% endif %}
+                        <li class="page-item active"><a class="page-link" href="#">Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}</a></li>
+                        {% if transactions.has_next %}
+                            <li class="page-item"><a class="page-link" href="?page={{ transactions.next_page_number }}">next</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ transactions.paginator.num_pages }}">last &raquo;</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+
+            {% if pending_transactions %}
+            <div>
+                <h3>Pending Transactions</h3>
+                <ul>
+                    {% for transaction in pending_transactions %}
+                    <li>{{ transaction.transaction_type }} - ₹{{ transaction.amount }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -2,11 +2,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from .models import Order, OrderItem, Payment
+from .models import Order, OrderItem, Payment,OrderAddress
 from django.db import transaction
-from .models import Address
 from cart.models import Cart, CartItem
 from django.http import HttpResponse
+from accounts.models import Address
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -15,6 +15,7 @@ import razorpay
 from django.conf import settings
 from django.urls import reverse
 from coupon.models import Coupon
+from django.db.models import Sum
 
 @login_required
 def list_orders(request):
@@ -47,6 +48,7 @@ def list_orders(request):
     }
 
     return render(request, 'order/order_list.html', context)
+
 @login_required
 def change_order_status(request, order_uuid, new_status):
     order = get_object_or_404(Order, uuid=order_uuid, user=request.user)
@@ -63,16 +65,58 @@ def change_order_status(request, order_uuid, new_status):
 
 @login_required
 def return_order(request, order_uuid):
+    order = get_object_or_404(Order, uuid=order_uuid, user=request.user)
     if request.method == "POST":
-        order = get_object_or_404(Order, uuid=order_uuid, user=request.user)
-        if order.status == 'Delivered':
+        if order.status == 'Delivered' and order.return_status == 'Not Requested':
+            with transaction.atomic():
+                # Update order status
+                order.return_status = 'Requested'
+                order.save()
 
-            order.status = 'Return Requested'
-            order.save()
-            messages.success(request, "Return request submitted successfully.")
+                messages.success(request, "Return request submitted successfully.")
         else:
             messages.error(request, "This order cannot be returned.")
-    return redirect('order:order_detail', order_uuid=order_uuid)
+    return redirect('order:order_detail', order_uuid=order.uuid)
+
+
+@login_required
+def process_return(request, order_uuid):
+    order = get_object_or_404(Order, uuid=order_uuid, user=request.user)
+
+    # Check if the request is a POST and user is staff
+    if request.method == "POST" and request.user.is_staff:
+        action = request.POST.get('action')
+
+        # Check if the return status is 'Requested'
+        if order.return_status == 'Requested':
+            with transaction.atomic():
+                try:
+                    if action == 'approve':
+                        order.return_status = 'Approved'
+                        # Handle refund for all payment methods
+                        wallet = get_object_or_404(Wallet, user=order.user)
+                        WalletTransaction.handle_order_cancellation(
+                            wallet=wallet,
+                            order_amount=order.total_price,
+                            payment_method=order.payment_method,
+                            order=order
+                        )
+                        order.save()
+                        messages.success(request, "Return approved and refund processed.")
+                    elif action == 'reject':
+                        order.return_status = 'Rejected'
+                        order.save()
+                        messages.success(request, "Return request rejected.")
+                    else:
+                        messages.error(request, "Invalid action.")
+                except Exception as e:
+                    messages.error(request, f"An error occurred: {e}")
+        else:
+            messages.error(request, "Invalid return status for processing.")
+    else:
+        messages.error(request, "Invalid request or insufficient permissions.")
+
+    return redirect('admin_order_list')
 
 @login_required
 def cancel_order(request, order_uuid):
@@ -81,29 +125,37 @@ def cancel_order(request, order_uuid):
     if request.method == "POST":
         if order.status in ['Pending', 'Confirmed', 'Shipped']:
             with transaction.atomic():
-
+                # Restore stock
                 for item in order.items.all():
                     if item.variant:
                         variant = item.variant
                         variant.variant_stock += item.quantity
                         variant.save()
 
-
+                # Update order status
                 order.status = 'Cancelled'
                 order.save()
 
+                # Handle refunds for wallet and online payments
+                if order.payment_method in ['wallet', 'online_payment']:
+                    # Ensure the wallet exists
+                    wallet, created = Wallet.objects.get_or_create(user=request.user)
 
-                if order.payment_method == 'wallet':
-                    wallet = get_object_or_404(Wallet, user=request.user)
-                    WalletTransaction.handle_order_cancellation(wallet, order.total_price)
-
-                elif order.payment_method == 'online_payment':
-                    Payment.objects.create(
-                        order=order,
-                        amount_paid=order.total_price,
+                    WalletTransaction.handle_order_cancellation(
+                        wallet=wallet,
+                        order_amount=order.total_price,
                         payment_method=order.payment_method,
-                        transaction_id=f"REFUND-{order.uuid}"
+                        order=order
                     )
+
+                    if order.payment_method == 'online_payment':
+                        # Create a record of the refund
+                        Payment.objects.create(
+                            order=order,
+                            amount_paid=order.total_price,
+                            payment_method=order.payment_method,
+                            transaction_id=f"REFUND-{order.uuid}"
+                        )
 
                 messages.success(request, "Order cancelled successfully.")
             return redirect('order:list_orders')
@@ -111,6 +163,8 @@ def cancel_order(request, order_uuid):
             messages.error(request, "Cannot cancel this order.")
 
     return redirect('order:order_detail', order_uuid=order.uuid)
+
+
 
 @login_required
 def proceed_to_payment(request):
@@ -145,8 +199,6 @@ def proceed_to_payment(request):
     })
 
 
-
-
 @login_required
 def place_order(request):
     if request.method == "POST":
@@ -159,7 +211,22 @@ def place_order(request):
 
         try:
             with transaction.atomic():
+                # Get the selected address
                 address = get_object_or_404(Address, id=address_id, user=request.user)
+
+                # Create OrderAddress instance
+                order_address = OrderAddress.objects.create(
+                    user=request.user,
+                    full_name=address.full_name,
+                    phone_number=address.phone_number,
+                    address_line_1=address.address_line_1,
+                    address_line_2=address.address_line_2,
+                    city=address.city,
+                    state=address.state,
+                    postal_code=address.postal_code,
+                    country=address.country
+                )
+
                 cart = Cart.objects.get(user=request.user)
                 cart_items = CartItem.objects.filter(cart=cart)
 
@@ -181,7 +248,7 @@ def place_order(request):
                     user=request.user,
                     total_price=cart_total,
                     payment_method=payment_method,
-                    address=address,
+                    address=order_address,
                     status='Pending',
                     payment_status='Pending'
                 )
@@ -197,15 +264,17 @@ def place_order(request):
 
                     if item.variant:
                         if item.variant.variant_stock < item.quantity:
-                            raise ValueError(f"Not enough stock for {item.product.product_name} - {item.variant.colour_name}")
+                            raise ValueError(
+                                f"Not enough stock for {item.product.product_name} - {item.variant.colour_name}")
                         item.variant.variant_stock -= item.quantity
                         item.variant.save()
 
                 cart_items.delete()
                 cart.delete()
 
+                # Handle payment methods
                 if payment_method == 'online_payment':
-
+                    # Razorpay payment logic
                     client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
                     razorpay_order = client.order.create({
                         'amount': int(cart_total * 100),
@@ -215,7 +284,6 @@ def place_order(request):
                     order.razorpay_order_id = razorpay_order['id']
                     order.save()
 
-
                     return render(request, 'order/razorpay_payment.html', {
                         'order': order,
                         'razorpay_order_id': razorpay_order['id'],
@@ -224,9 +292,21 @@ def place_order(request):
                     })
 
                 elif payment_method == 'wallet':
-                    if request.user.wallet.balance >= cart_total:
-                        request.user.wallet.balance -= cart_total
-                        request.user.wallet.save()
+                    # Wallet payment logic
+                    wallet = request.user.wallet
+                    if wallet.balance >= cart_total:
+                        wallet.balance -= cart_total
+                        wallet.save()
+
+                        WalletTransaction.objects.create(
+                            wallet=wallet,
+                            amount=cart_total,
+                            transaction_type='Debit',
+                            description='Payment for order',
+                            payment_method=payment_method,
+                            order=order
+                        )
+
                         order.payment_status = 'Completed'
                         order.status = 'Confirmed'
                         order.save()
@@ -247,12 +327,11 @@ def place_order(request):
             messages.error(request, str(e))
             return redirect('order:checkout')
         except Exception as e:
-            messages.error(request, "An error occurred while processing your order. Please try again.")
+            messages.error(request, f"An error occurred while processing your order: {str(e)}")
             return redirect('order:checkout')
 
     else:
         return redirect('order:checkout')
-
 
 @csrf_exempt
 def razorpay_callback(request):
@@ -352,7 +431,6 @@ def order_detail(request, order_uuid):
 
     user = order.user
     address = order.address
-
     items = OrderItem.objects.filter(order=order)
 
 
@@ -432,3 +510,26 @@ def get_cart_total(user):
         return 0
 
 
+
+
+@login_required
+def my_wallet(request):
+    wallet, created = Wallet.objects.get_or_create(user=request.user)
+    transactions = WalletTransaction.objects.filter(wallet=wallet).order_by('-timestamp')
+
+    # Paginate transactions
+    paginator = Paginator(transactions, 10)  # Show 10 transactions per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Calculate total credits and debits
+    total_credit = transactions.filter(transaction_type='Credit').aggregate(Sum('amount'))['amount__sum'] or 0
+    total_debit = transactions.filter(transaction_type='Debit').aggregate(Sum('amount'))['amount__sum'] or 0
+
+    context = {
+        'wallet': wallet,
+        'transactions': page_obj,
+        'total_credit': total_credit,
+        'total_debit': total_debit,
+    }
+    return render(request, 'userside/wallet.html', context)

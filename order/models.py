@@ -1,11 +1,25 @@
 from django.db import models
 from django.conf import settings
-from accounts.models import Address
-from product.models import Product, ProductVariant
 import uuid
 from decimal import Decimal
+from product.models import Product, ProductVariant
 
-# Create your models here.
+# Define the OrderAddress model first
+class OrderAddress(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    full_name = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=20)
+    address_line_1 = models.CharField(max_length=100)
+    address_line_2 = models.CharField(max_length=100, blank=True, null=True)
+    city = models.CharField(max_length=50)
+    state = models.CharField(max_length=50)
+    postal_code = models.CharField(max_length=20)
+    country = models.CharField(max_length=50)
+
+    def __str__(self):
+        return f"{self.full_name}, {self.address_line_1}, {self.city}, {self.country}"
+
+# Define the Order model
 class Order(models.Model):
     STATUS_CHOICES = (
         ('Pending', 'Pending'),
@@ -46,12 +60,11 @@ class Order(models.Model):
     discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     razorpay_order_id = models.CharField(max_length=255, blank=True, null=True)
     payment_status = models.CharField(max_length=50, choices=PAYMENT_STATUS_CHOICES, default='Pending')
-    address = models.ForeignKey(Address, on_delete=models.CASCADE)
-
+    address = models.ForeignKey(OrderAddress, on_delete=models.CASCADE)
     def __str__(self):
         return f"Order {self.uuid} - {self.user.username}"
 
-
+# Define the OrderItem model
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -65,7 +78,7 @@ class OrderItem(models.Model):
     def __str__(self):
         return f"{self.quantity} x {self.product.product_name} in Order {self.order.uuid}"
 
-
+# Define the Payment model
 class Payment(models.Model):
     order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='payment')
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2)

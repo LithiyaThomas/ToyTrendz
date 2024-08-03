@@ -6,11 +6,12 @@ from .forms import AdminLoginForm
 from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login
 from django.contrib.auth.decorators import login_required
-from order.models import Order, OrderItem
+from order.models import Order, OrderItem,Payment
 from .forms import OrderStatusForm
 from django.contrib.auth.decorators import user_passes_test
 from datetime import datetime
-
+from django.db import transaction
+from accounts.models import  Wallet, WalletTransaction
 def admin_login(request):
     if request.method == 'POST':
         form = AdminLoginForm(request.POST)
@@ -105,13 +106,51 @@ def update_order_status(request, pk):
 
     return render(request, 'adminside/update_order_status.html', {'form': form, 'order': order})
 
+
 @user_passes_test(is_admin)
 def cancel_order(request, pk):
     order = get_object_or_404(Order, pk=pk)
+
     if request.method == 'POST':
-        order.status = 'Cancelled'
-        order.save()
-        return redirect('admin_order_list')
+        if order.status in ['Pending', 'Confirmed', 'Shipped']:
+            with transaction.atomic():
+                # Restore stock
+                for item in order.items.all():
+                    if item.variant:
+                        variant = item.variant
+                        variant.variant_stock += item.quantity
+                        variant.save()
+
+                # Update order status
+                order.status = 'Cancelled'
+                order.save()
+
+                # Handle refunds for wallet and online payments
+                if order.payment_method in ['wallet', 'online_payment']:
+                    # Ensure the wallet exists
+                    wallet, created = Wallet.objects.get_or_create(user=order.user)
+
+                    WalletTransaction.handle_order_cancellation(
+                        wallet=wallet,
+                        order_amount=order.total_price,
+                        payment_method=order.payment_method,
+                        order=order
+                    )
+
+                    if order.payment_method == 'online_payment':
+                        # Create a record of the refund
+                        Payment.objects.create(
+                            order=order,
+                            amount_paid=order.total_price,
+                            payment_method=order.payment_method,
+                            transaction_id=f"REFUND-{order.pk}"
+                        )
+
+                messages.success(request, "Order cancelled successfully.")
+                return redirect('admin_order_list')
+        else:
+            messages.error(request, "Cannot cancel this order.")
+
     return render(request, 'adminside/cancel_order.html', {'order': order})
 
 

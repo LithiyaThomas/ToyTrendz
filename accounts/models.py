@@ -99,6 +99,11 @@ class Wallet(models.Model):
         ('Debit', 'Debit'),
         ('Credit', 'Credit'),
     )
+    PAYMENT_METHODS = (
+        ('Wallet', 'Wallet'),
+        ('Online', 'Online'),
+        ('COD', 'Cash on Delivery'),
+    )
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -113,12 +118,12 @@ class WalletTransaction(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     timestamp = models.DateTimeField(auto_now_add=True)
     description = models.CharField(max_length=255, blank=True)
-
+    payment_method = models.CharField(max_length=20, choices=Wallet.PAYMENT_METHODS)
+    order = models.ForeignKey('order.Order', on_delete=models.SET_NULL, null=True, blank=True, related_name='wallet_transactions')
     def __str__(self):
         return f"{self.transaction_type} of {self.amount} for {self.wallet.user.username} at {self.timestamp}"
 
     def save(self, *args, **kwargs):
-
         if not self.description:
             if self.transaction_type == 'Debit':
                 self.description = _('Debit of %(amount)s from wallet') % {'amount': self.amount}
@@ -127,16 +132,15 @@ class WalletTransaction(models.Model):
         super().save(*args, **kwargs)
 
     @staticmethod
-    def handle_order_cancellation(wallet, order_amount):
+    def handle_order_cancellation(wallet, order_amount, payment_method, order=None):
         with transaction.atomic():
-
             WalletTransaction.objects.create(
                 wallet=wallet,
                 amount=order_amount,
                 transaction_type='Credit',
-                description=_('Refund for canceled order')
+                description=_('Refund for canceled order'),
+                payment_method=payment_method,
+                order=order
             )
-
-
             wallet.balance += order_amount
             wallet.save()

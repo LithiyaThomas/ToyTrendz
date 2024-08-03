@@ -2,25 +2,26 @@
 {% load static %}
 {% block content %}
 
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.26/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+
 <section class="content-main">
     <div class="content-header">
         <div>
-            <h2 class="content-title card-title">Sales Report </h2>
-            <p>Whole data about your order here</p>
+            <h2 class="content-title card-title">Sales Report</h2>
+            <p>Comprehensive data about your orders is available here</p>
         </div>
         <div class="d-flex gap-2">
             <button id="download-pdf" class="btn btn-primary">
-                <i class="text-muted material-icons md-post_add"></i>Download as PDF
+                <i class="material-icons md-post_add"></i> Download as PDF
             </button>
             <button id="download-excel" class="btn btn-primary">
-                <i class="text-muted material-icons md-post_add"></i>Download as Excel
+                <i class="material-icons md-post_add"></i> Download as Excel
             </button>
         </div>
     </div>
+
     <div class="mb-4">
         <form method="post" action="" class="row g-2">
             {% csrf_token %}
@@ -28,27 +29,25 @@
                 <h5 class="mb-0">Start Date:</h5>
             </div>
             <div class="col-auto">
-                <input type="date" name="start_date" class="form-control" placeholder="Start date">
+                <input type="date" name="start_date" class="form-control" placeholder="Start date" value="{{ start_date|default:'' }}">
             </div>
             <div class="col-auto d-flex align-items-center">
                 <h5 class="mb-0">End Date:</h5>
             </div>
             <div class="col-auto">
-                <input type="date" name="end_date" class="form-control" placeholder="End date">
+                <input type="date" name="end_date" class="form-control" placeholder="End date" value="{{ end_date|default:'' }}">
             </div>
             <div class="col-auto">
                 <button type="submit" class="btn btn-primary">Search</button>
             </div>
         </form>
     </div>
-    
-    
-    <!-- Table -->
+
     <div class="card mb-4">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table" id="sales-table">
-                    <thead>
+                <table class="table table-striped" id="sales-table">
+                    <thead class="thead-dark">
                         <tr>
                             <th>Date</th>
                             <th>Order ID</th>
@@ -59,25 +58,27 @@
                         </tr>
                     </thead>
                     <tbody>
-                       {% for order in orders %}
-        <tr>
-            <td>{{ order.created_at|date:"Y-m-d H:i" }}</td>
-            <td>{{ order.uuid }}</td>
-            <td>{{ order.user.username }}</td>
-            <td>₹{{ order.total_price }}</td>
-            <td>{{ order.get_payment_method_display }}</td>
-            <td>{{ order.coupon_code|default:"Nill" }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="6">No orders found</td>
-        </tr>
-        {% endfor %}
+                        {% for order in orders %}
+                            <tr>
+                                <td>{{ order.created_at|date:"Y-m-d H:i" }}</td>
+                                <td>{{ order.uuid }}</td>
+                                <td>{{ order.user.username }}</td>
+                                <td>{{ order.total_price }}</td>
+                                <td>{{ order.get_payment_method_display }}</td>
+                                <td>{{ order.coupon_code|default:"Nil" }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="6">No orders found</td>
+                            </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
+            <h3 class="mt-4">Total Sales: {{ total_sales|floatformat:2 }}</h3>
         </div>
     </div>
+
     <div class="pagination-area mt-30 mb-50">
         <nav aria-label="Page navigation example">
             <ul class="pagination justify-content-start">
@@ -86,44 +87,42 @@
                 <li class="page-item"><a class="page-link" href="#">03</a></li>
                 <li class="page-item"><a class="page-link dot" href="#">...</a></li>
                 <li class="page-item"><a class="page-link" href="#">16</a></li>
-<li class="page-item"><a class="page-link" href="#"><i class="material-icons md-chevron_right"></i></a></li>
+                <li class="page-item"><a class="page-link" href="#"><i class="material-icons md-chevron_right"></i></a></li>
             </ul>
         </nav>
     </div>
-</section> <!-- content-main end// -->
+</section>
 
 <script>
     document.getElementById('download-pdf').addEventListener('click', function () {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const table = document.getElementById('sales-table');
+        const totalSales = document.querySelector('h3.mt-4').textContent;
 
-        doc.text("Sales Report", 20, 20);
+        doc.text("Sales Report", 14, 22);
 
         doc.autoTable({
             html: table,
             startY: 30,
-            styles: {
-                cellPadding: 5,
-                fontSize: 10,
-                halign: 'center',
-                valign: 'middle',
-                fillColor: [0, 0, 0],
-                textColor: [255, 255, 255]
-            },
+            theme: 'striped',
             headStyles: {
                 fillColor: [0, 0, 0],
                 textColor: [255, 255, 255],
+                fontSize: 12,
                 fontStyle: 'bold'
             },
             bodyStyles: {
-                fillColor: [255, 255, 255],
-                textColor: [0, 0, 0]
+                fontSize: 10,
+                halign: 'center'
             },
             alternateRowStyles: {
-                fillColor: [230, 230, 230]
-            }
+                fillColor: [240, 240, 240]
+            },
+            margin: { top: 40 }
         });
+
+        doc.text(totalSales, 14, doc.autoTable.previous.finalY + 10);
 
         doc.save('sales_report.pdf');
     });
@@ -132,8 +131,24 @@
         const table = document.getElementById('sales-table');
         const ws = XLSX.utils.table_to_sheet(table);
         const wb = XLSX.utils.book_new();
+
+        // Style the header
+        const headerStyle = {
+            font: { bold: true, color: { rgb: "FFFFFF" } },
+            fill: { fgColor: { rgb: "000000" } },
+            alignment: { horizontal: "center" }
+        };
+
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            const cell_address = XLSX.utils.encode_cell({ c: C, r: range.s.r });
+            if (!ws[cell_address]) continue;
+            ws[cell_address].s = headerStyle;
+        }
+
         XLSX.utils.book_append_sheet(wb, ws, "Sales Report");
         XLSX.writeFile(wb, "sales_report.xlsx");
     });
 </script>
+
 {% endblock %}

@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate, login as auth_login
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db import transaction
 from datetime import datetime
-
+from django.db.models import Sum
 from accounts.models import User, Wallet, WalletTransaction
 from order.models import Order, OrderItem, Payment
 from .forms import AdminLoginForm, OrderStatusForm
@@ -168,7 +168,9 @@ def sales_report(request):
                 return redirect('sales_report')
 
             orders = Order.objects.filter(created_at__date__range=[start_date, end_date], status="Delivered")
-            return render(request, 'adminside/salesreport.html', {'orders': orders})
+            total_sales = orders.aggregate(total=Sum('total_price'))['total'] or 0
+            return render(request, 'adminside/salesreport.html', {'orders': orders, 'total_sales': total_sales, 'start_date': start_date, 'end_date': end_date})
 
     orders = Order.objects.filter(status="Delivered")
-    return render(request, 'adminside/salesreport.html', {'orders': orders})
+    total_sales = orders.aggregate(total=Sum('total_price'))['total'] or 0
+    return render(request, 'adminside/salesreport.html', {'orders': orders, 'total_sales': total_sales})

@@ -175,18 +175,22 @@ def cancel_order(request, order_uuid):
     return redirect('order:order_detail', order_uuid=order.uuid)
 
 
-
 @login_required
 def proceed_to_payment(request):
+    # Fetch the user's addresses
     addresses = Address.objects.filter(user=request.user, is_deleted=False)
 
     try:
+        # Fetch the cart for the logged-in user
         cart = Cart.objects.get(user=request.user)
     except Cart.DoesNotExist:
         cart = None
 
     if cart:
+        # Fetch the items in the cart
         cart_items = CartItem.objects.filter(cart=cart)
+
+        # Validate stock and item status
         for item in cart_items:
             if item.quantity > item.variant.variant_stock:
                 messages.error(request, f"Insufficient stock for {item.product.product_name}.")
@@ -194,11 +198,14 @@ def proceed_to_payment(request):
             if not item.product.is_active or not item.variant.variant_status:
                 messages.error(request, f"{item.product.product_name} is no longer available.")
                 return redirect('cart:view_cart')
+
+        # Calculate the total price
         cart_total = sum(item.get_total_price() for item in cart_items)
     else:
         cart_items = []
         cart_total = 0
 
+    # Define available payment options
     payment_options = ['wallet', 'online_payment', 'Cash on Delivery']
 
     return render(request, 'order/proceed_to_payment.html', {
@@ -207,7 +214,6 @@ def proceed_to_payment(request):
         'cart_total': cart_total,
         'payment_options': payment_options
     })
-
 
 @login_required
 def place_order(request):

@@ -9,145 +9,149 @@
 <div class="container-fluid mt-4">
     <h2 class="mb-4">Order Management</h2>
 
-    <!-- Regular Orders -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Regular Orders</h6>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>ID</th>
-                            <th>User</th>
-                            <th>Total Price</th>
-                            <th>Status</th>
-                            <th>Payment Status</th>
-                            <th>Actions</th>
-                            <th>Details</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for order in orders %}
-                            {% if order.return_status != 'Requested' %}
-                                <tr>
-                                    <td>{{ order.uuid }}</td>
-                                    <td>{{ order.user.username }}</td>
-                                    <td>${{ order.total_price|floatformat:2 }}</td>
-                                    <td>
-                                        <span class="badge badge-status-{{ order.status|lower }}"
-                                              style="background-color:
-                                                {% if order.status == 'Approved' %}#1cc88a
-                                                {% elif order.status == 'Pending' %}#f6c23e
-                                                {% elif order.status == 'Cancelled' %}#e74a3b
-                                                {% elif order.status == 'Shipped' %}#4e73df
-                                                {% elif order.status == 'Delivered' %}#36b9cc
-                                                {% else %}#858796{% endif %};">
-                                            {{ order.get_status_display }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="badge badge-payment-{{ order.payment_status|lower }}"
-                                              style="background-color:
-                                                {% if order.payment_status == 'Paid' %}#1cc88a
-                                                {% elif order.payment_status == 'Pending' %}#f6c23e
-                                                {% elif order.payment_status == 'Unpaid' %}#e74a3b
-                                                {% elif order.payment_status == 'Failed' %}#e74a3b
-                                                {% else %}#858796{% endif %};">
-                                            {{ order.get_payment_status_display }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a href="{% url 'update_order_status' order.id %}" class="btn btn-outline-warning btn-sm action-btn">Update</a>
-                                        <a href="{% url 'admin_cancel_order' order.id %}" class="btn btn-outline-danger btn-sm action-btn">Cancel</a>
-                                    </td>
-                                    <td>
-                                        <a href="{% url 'order_detail' order.id %}" class="btn btn-outline-info btn-sm action-btn">Details</a>
-                                    </td>
-                                </tr>
-                            {% endif %}
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+   <!-- Regular Orders -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Regular Orders</h6>
     </div>
-
-    <!-- Orders with Return Requests -->
-    <div class="card shadow">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Orders with Return Requests</h6>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>ID</th>
-                            <th>User</th>
-                            <th>Total Price</th>
-                            <th>Status</th>
-                            <th>Payment Status</th>
-                            <th>Actions</th>
-                            <th>Return Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for order in orders %}
-                            {% if order.return_status == 'Requested' %}
-                                <tr>
-                                    <td>{{ order.uuid }}</td>
-                                    <td>{{ order.user.username }}</td>
-                                    <td>${{ order.total_price|floatformat:2 }}</td>
-                                    <td>
-                                        <span class="badge badge-status-{{ order.status|lower }}"
-                                              style="background-color:
-                                                {% if order.status == 'Approved' %}#1cc88a
-                                                {% elif order.status == 'Pending' %}#f6c23e
-                                                {% elif order.status == 'Cancelled' %}#e74a3b
-                                                {% elif order.status == 'Shipped' %}#4e73df
-                                                {% elif order.status == 'Delivered' %}#36b9cc
-                                                {% else %}#858796{% endif %};">
-                                            {{ order.get_status_display }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="badge badge-payment-{{ order.payment_status|lower }}"
-                                              style="background-color:
-                                                {% if order.payment_status == 'Paid' %}#1cc88a
-                                                {% elif order.payment_status == 'Pending' %}#f6c23e
-                                                {% elif order.payment_status == 'Unpaid' %}#e74a3b
-                                                {% elif order.payment_status == 'Failed' %}#e74a3b
-                                                {% else %}#858796{% endif %};">
-                                            {{ order.get_payment_status_display }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a href="{% url 'order_detail' order.id %}" class="btn btn-outline-info btn-sm action-btn">Details</a>
-                                    </td>
-                                    <td>
-                                       <form action="{% url 'order:process_return' order.uuid %}" method="post" class="d-inline">
-    {% csrf_token %}
-    <input type="hidden" name="action" value="approve">
-    <button type="submit" class="btn btn-success btn-sm action-btn">Approve</button>
-</form>
-<form action="{% url 'order:process_return' order.uuid %}" method="post" class="d-inline ml-2">
-    {% csrf_token %}
-    <input type="hidden" name="action" value="reject">
-    <button type="submit" class="btn btn-danger btn-sm action-btn">Reject</button>
-</form>
-
-                                    </td>
-                                </tr>
-                            {% endif %}
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="thead-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Total Price</th>
+                        <th>Status</th>
+                        <th>Payment Status</th>
+                        <th>Actions</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                        {% if order.return_status != 'Requested' %}
+                            <tr>
+                                <td>{{ order.uuid }}</td>
+                                <td>{{ order.user.username }}</td>
+                                <td>${{ order.total_price|floatformat:2 }}</td>
+                                <td>
+                                    <span class="badge badge-status-{{ order.status|lower }}"
+                                          style="background-color:
+                                            {% if order.status == 'Approved' %}#1cc88a
+                                            {% elif order.status == 'Pending' %}#f6c23e
+                                            {% elif order.status == 'Cancelled' %}#e74a3b
+                                            {% elif order.status == 'Shipped' %}#4e73df
+                                            {% elif order.status == 'Delivered' %}#36b9cc
+                                            {% else %}#858796{% endif %};">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-payment-{{ order.payment_status|lower }}"
+                                          style="background-color:
+                                            {% if order.payment_status == 'Paid' %}#1cc88a
+                                            {% elif order.payment_status == 'Pending' %}#f6c23e
+                                            {% elif order.payment_status == 'Unpaid' %}#e74a3b
+                                            {% elif order.payment_status == 'Failed' %}#e74a3b
+                                            {% else %}#858796{% endif %};">
+                                        {{ order.get_payment_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'update_order_status' order.id %}" class="btn btn-outline-warning btn-sm action-btn">Update</a>
+                                    {% if order.status != 'Cancelled' %}
+                                        <a href="{% url 'admin_cancel_order' order.id %}" class="btn btn-outline-danger btn-sm action-btn">Cancel</a>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'order_detail' order.id %}" class="btn btn-outline-info btn-sm action-btn">Details</a>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
+
+
+   <!-- Orders with Return Requests -->
+<div class="card shadow">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Orders with Return Requests</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="thead-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Total Price</th>
+                        <th>Status</th>
+                        <th>Payment Status</th>
+                        <th>Actions</th>
+                        <th>Return Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                        {% if order.return_status == 'Requested' %}
+                            <tr>
+                                <td>{{ order.uuid }}</td>
+                                <td>{{ order.user.username }}</td>
+                                <td>${{ order.total_price|floatformat:2 }}</td>
+                                <td>
+                                    <span class="badge badge-status-{{ order.status|lower }}"
+                                          style="background-color:
+                                            {% if order.status == 'Approved' %}#1cc88a
+                                            {% elif order.status == 'Pending' %}#f6c23e
+                                            {% elif order.status == 'Cancelled' %}#e74a3b
+                                            {% elif order.status == 'Shipped' %}#4e73df
+                                            {% elif order.status == 'Delivered' %}#36b9cc
+                                            {% else %}#858796{% endif %};">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-payment-{{ order.payment_status|lower }}"
+                                          style="background-color:
+                                            {% if order.payment_status == 'Paid' %}#1cc88a
+                                            {% elif order.payment_status == 'Pending' %}#f6c23e
+                                            {% elif order.payment_status == 'Unpaid' %}#e74a3b
+                                            {% elif order.payment_status == 'Failed' %}#e74a3b
+                                            {% else %}#858796{% endif %};">
+                                        {{ order.get_payment_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'order_detail' order.id %}" class="btn btn-outline-info btn-sm action-btn">Details</a>
+                                </td>
+                                <td>
+                                   <form action="{% url 'order:process_return' order.uuid %}" method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="approve">
+                                    <button type="submit" class="btn btn-success btn-sm action-btn">Approve</button>
+                                </form>
+                                {% if order.status != 'Cancelled' %}
+                                    <form action="{% url 'order:process_return' order.uuid %}" method="post" class="d-inline ml-2">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="reject">
+                                        <button type="submit" class="btn btn-danger btn-sm action-btn">Reject</button>
+                                    </form>
+                                {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 
 {% endblock %}
 

@@ -228,144 +228,38 @@
                             <label for="postal_code" class="form-label">Postal Code</label>
                             <input type="text" class="form-control" id="postal_code" name="postal_code" required>
                         </div>
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary">Add Address</button>
-                        </div>
+                        <button type="submit" class="btn btn-primary">Add Address</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // JavaScript for applying coupon code
+        document.getElementById('apply-coupon-btn').addEventListener('click', function() {
+            const couponCode = document.getElementById('coupon_code').value;
+            const couponMessage = document.getElementById('coupon_message');
+            const discountSection = document.getElementById('discount-section');
+            const discountAmount = document.getElementById('discount-amount');
+            const orderTotal = document.getElementById('order-total');
 
-<script>
-    document.addEventListener('DOMContentLoaded', (event) => {
-        {% if messages %}
-            const messages = [
-                {% for message in messages %}
-                    {
-                        level: "{{ message.tags }}",
-                        text: "{{ message }}"
-                    },
-                {% endfor %}
-            ];
-            messages.forEach(message => {
-                Swal.fire({
-                    toast: true,
-                    position: 'top-right',
-                    icon: message.level === 'success' ? 'success' : 'error',
-                    title: message.text,
-                    showConfirmButton: false,
-                    timer: 3000
-                });
-            });
-        {% endif %}
-    });
-
-    $(document).ready(function() {
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-
-        const csrftoken = getCookie('csrftoken');
-
-        $.ajaxSetup({
-            beforeSend: function(xhr, settings) {
-                if (!this.crossDomain) {
-                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
-                }
+            // Simulate coupon application
+            // In a real scenario, you would send an AJAX request to your server to apply the coupon and get the discount
+            if (couponCode === 'DISCOUNT10') {
+                discountSection.style.display = 'block';
+                discountAmount.textContent = '$10.00'; // Simulated discount amount
+                orderTotal.textContent = '$' + (parseFloat(orderTotal.textContent.replace('$', '')) - 10).toFixed(2);
+                couponMessage.textContent = 'Coupon applied successfully!';
+                couponMessage.className = 'text-success';
+            } else {
+                couponMessage.textContent = 'Invalid coupon code.';
+                couponMessage.className = 'text-danger';
             }
         });
-
-        $('#apply-coupon-btn').on('click', function(e) {
-            e.preventDefault();
-            const couponCode = $('#coupon_code').val().trim();
-
-            $.ajax({
-                url: "{% url 'order:apply_coupon' %}",
-                type: "POST",
-                data: {
-                    'coupon_code': couponCode,
-                    'csrfmiddlewaretoken': csrftoken
-                },
-                success: function(response) {
-                    if (response.success) {
-                        $('#coupon_message').html('<div class="alert alert-success">' + response.message + '</div>');
-                        $('#order-total').text('$' + response.new_total.toFixed(2));
-                        $('#discount-amount').text('$' + response.discount.toFixed(2));
-                        $('#discount-section').show();
-                    } else {
-                        $('#coupon_message').html('<div class="alert alert-danger">' + response.message + '</div>');
-                        $('#discount-section').hide();
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.log('Error:', xhr.responseText);
-                    $('#coupon_message').html('<div class="alert alert-danger">Error applying coupon. Please try again.</div>');
-                    $('#discount-section').hide();
-                }
-            });
-        });
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-        var newAddressForm = document.getElementById('newAddressForm');
-        if (newAddressForm) {
-            newAddressForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                var formData = new FormData(newAddressForm);
-                var xhr = new XMLHttpRequest();
-                xhr.open('POST', newAddressForm.action, true);
-                xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
-
-                xhr.onload = function() {
-                    if (xhr.status === 200) {
-                        window.location.href = "{% url 'order:checkout' %}";
-                    } else {
-                        alert('An error occurred while adding the address. Status: ' + xhr.status);
-                    }
-                };
-
-                xhr.onerror = function() {
-                    alert('An error occurred while adding the address.');
-                };
-
-                xhr.send(formData);
-            });
-        }
-
-        // Function to get CSRF token from cookie
-        function getCookie(name) {
-            var cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-    });
-</script>
+    </script>
 </body>
 </html>

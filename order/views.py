@@ -16,7 +16,7 @@ from django.conf import settings
 from django.urls import reverse
 from coupon.models import Coupon
 from django.db.models import Sum
-
+import logging
 @login_required
 def list_orders(request):
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
@@ -78,22 +78,24 @@ def return_order(request, order_uuid):
             messages.error(request, "This order cannot be returned.")
     return redirect('order:order_detail', order_uuid=order.uuid)
 
-
+logger = logging.getLogger(__name__)
 @login_required
 def process_return(request, order_uuid):
-    order = get_object_or_404(Order, uuid=order_uuid, user=request.user)
+    logger.info(f"Process return called for order {order_uuid}")
+    order = get_object_or_404(Order, uuid=order_uuid)
+    logger.info(f"Order found: {order}")
 
-    # Check if the request is a POST and user is staff
-    if request.method == "POST" and request.user.is_staff:
+    if request.method == "POST":
         action = request.POST.get('action')
+        logger.info(f"Action: {action}")
 
-        # Check if the return status is 'Requested'
         if order.return_status == 'Requested':
+            logger.info("Order return status is 'Requested'")
             with transaction.atomic():
                 try:
                     if action == 'approve':
+                        logger.info("Approving return")
                         order.return_status = 'Approved'
-                        # Handle refund for all payment methods
                         wallet = get_object_or_404(Wallet, user=order.user)
                         WalletTransaction.handle_order_cancellation(
                             wallet=wallet,
@@ -102,21 +104,29 @@ def process_return(request, order_uuid):
                             order=order
                         )
                         order.save()
+                        logger.info("Return approved and refund processed")
                         messages.success(request, "Return approved and refund processed.")
                     elif action == 'reject':
+                        logger.info("Rejecting return")
                         order.return_status = 'Rejected'
                         order.save()
+                        logger.info("Return request rejected")
                         messages.success(request, "Return request rejected.")
                     else:
+                        logger.error(f"Invalid action: {action}")
                         messages.error(request, "Invalid action.")
                 except Exception as e:
-                    messages.error(request, f"An error occurred: {e}")
+                    logger.error(f"An error occurred: {e}")
+                    messages.error(request, f"An error occurred: {str(e)}")
         else:
+            logger.warning(f"Invalid return status: {order.return_status}")
             messages.error(request, "Invalid return status for processing.")
     else:
-        messages.error(request, "Invalid request or insufficient permissions.")
+        logger.warning("Invalid request method")
+        messages.error(request, "Invalid request method.")
 
-    return redirect('admin_order_list')
+    return redirect(reverse('admin_order_list'))
+
 
 @login_required
 def cancel_order(request, order_uuid):
@@ -293,7 +303,7 @@ def place_order(request):
 
                 elif payment_method == 'wallet':
                     # Wallet payment logic
-                    wallet = request.user.wallet
+                    wallet = get_object_or_404(Wallet, user=request.user)
                     if wallet.balance >= cart_total:
                         wallet.balance -= cart_total
                         wallet.save()
@@ -332,7 +342,6 @@ def place_order(request):
 
     else:
         return redirect('order:checkout')
-
 @csrf_exempt
 def razorpay_callback(request):
     if request.method == "POST":

@@ -1,17 +1,19 @@
 from django.views.decorators.cache import cache_control
-from accounts.models import User
-from django.shortcuts import render, redirect
-from django.shortcuts import get_object_or_404
-from .forms import AdminLoginForm
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login
-from django.contrib.auth.decorators import login_required
-from order.models import Order, OrderItem,Payment
-from .forms import OrderStatusForm
-from django.contrib.auth.decorators import user_passes_test
-from datetime import datetime
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db import transaction
-from accounts.models import  Wallet, WalletTransaction
+from datetime import datetime
+
+from accounts.models import User, Wallet, WalletTransaction
+from order.models import Order, OrderItem, Payment
+from .forms import AdminLoginForm, OrderStatusForm
+
+# Check if user is admin
+def is_admin(user):
+    return user.is_authenticated and user.is_admin
+
 def admin_login(request):
     if request.method == 'POST':
         form = AdminLoginForm(request.POST)
@@ -63,7 +65,7 @@ def block_user(request, user_id):
     return redirect('user_data')
 
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
-@login_required
+@login_required(login_url='admin-login')
 def unblock_user(request, user_id):
     if not request.session.get('is_admin'):
         return redirect('admin-login')
@@ -81,16 +83,10 @@ def admin_logout(request):
         messages.success(request, 'You have been logged out successfully.')
     return redirect('admin-login')
 
-
-def is_admin(user):
-    return user.is_superuser
-
 @user_passes_test(is_admin)
-@cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def order_list(request):
     orders = Order.objects.all().order_by('-created_at')
     return render(request, 'adminside/order_list.html', {'orders': orders})
-
 
 @user_passes_test(is_admin)
 def update_order_status(request, pk):
@@ -100,12 +96,12 @@ def update_order_status(request, pk):
         form = OrderStatusForm(request.POST, instance=order, current_status=order.status)
         if form.is_valid():
             form.save()
+            messages.success(request, 'Order status updated successfully.')
             return redirect('admin_order_list')
     else:
         form = OrderStatusForm(instance=order, current_status=order.status)
 
     return render(request, 'adminside/update_order_status.html', {'form': form, 'order': order})
-
 
 @user_passes_test(is_admin)
 def cancel_order(request, pk):
@@ -127,7 +123,6 @@ def cancel_order(request, pk):
 
                 # Handle refunds for wallet and online payments
                 if order.payment_method in ['wallet', 'online_payment']:
-                    # Ensure the wallet exists
                     wallet, created = Wallet.objects.get_or_create(user=order.user)
 
                     WalletTransaction.handle_order_cancellation(
@@ -138,7 +133,6 @@ def cancel_order(request, pk):
                     )
 
                     if order.payment_method == 'online_payment':
-                        # Create a record of the refund
                         Payment.objects.create(
                             order=order,
                             amount_paid=order.total_price,
@@ -153,14 +147,12 @@ def cancel_order(request, pk):
 
     return render(request, 'adminside/cancel_order.html', {'order': order})
 
-
 @user_passes_test(is_admin)
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def order_detail(request, pk):
     order = get_object_or_404(Order, pk=pk)
     order_items = OrderItem.objects.filter(order=order)
     return render(request, 'adminside/order_detail.html', {'order': order, 'order_items': order_items})
-
 
 def sales_report(request):
     if request.method == 'POST':
@@ -172,12 +164,11 @@ def sales_report(request):
                 start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
                 end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
             except ValueError:
+                messages.error(request, 'Invalid date format.')
                 return redirect('sales_report')
-
 
             orders = Order.objects.filter(created_at__date__range=[start_date, end_date], status="Delivered")
             return render(request, 'adminside/salesreport.html', {'orders': orders})
-
 
     orders = Order.objects.filter(status="Delivered")
     return render(request, 'adminside/salesreport.html', {'orders': orders})

@@ -35,8 +35,29 @@
                                     <td>{{ order.uuid }}</td>
                                     <td>{{ order.user.username }}</td>
                                     <td>${{ order.total_price|floatformat:2 }}</td>
-                                    <td><span class="badge badge-pill badge-{{ order.status|lower }}">{{ order.status }}</span></td>
-                                    <td><span class="badge badge-pill badge-{{ order.payment_status|lower }}">{{ order.payment_status }}</span></td>
+                                    <td>
+                                        <span class="badge badge-status-{{ order.status|lower }}"
+                                              style="background-color:
+                                                {% if order.status == 'Approved' %}#1cc88a
+                                                {% elif order.status == 'Pending' %}#f6c23e
+                                                {% elif order.status == 'Cancelled' %}#e74a3b
+                                                {% elif order.status == 'Shipped' %}#4e73df
+                                                {% elif order.status == 'Delivered' %}#36b9cc
+                                                {% else %}#858796{% endif %};">
+                                            {{ order.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-payment-{{ order.payment_status|lower }}"
+                                              style="background-color:
+                                                {% if order.payment_status == 'Paid' %}#1cc88a
+                                                {% elif order.payment_status == 'Pending' %}#f6c23e
+                                                {% elif order.payment_status == 'Unpaid' %}#e74a3b
+                                                {% elif order.payment_status == 'Failed' %}#e74a3b
+                                                {% else %}#858796{% endif %};">
+                                            {{ order.get_payment_status_display }}
+                                        </span>
+                                    </td>
                                     <td>
                                         <a href="{% url 'update_order_status' order.id %}" class="btn btn-outline-warning btn-sm action-btn">Update</a>
                                         <a href="{% url 'admin_cancel_order' order.id %}" class="btn btn-outline-danger btn-sm action-btn">Cancel</a>
@@ -79,22 +100,44 @@
                                     <td>{{ order.uuid }}</td>
                                     <td>{{ order.user.username }}</td>
                                     <td>${{ order.total_price|floatformat:2 }}</td>
-                                    <td><span class="badge badge-pill badge-{{ order.status|lower }}">{{ order.status }}</span></td>
-                                    <td><span class="badge badge-pill badge-{{ order.payment_status|lower }}">{{ order.payment_status }}</span></td>
+                                    <td>
+                                        <span class="badge badge-status-{{ order.status|lower }}"
+                                              style="background-color:
+                                                {% if order.status == 'Approved' %}#1cc88a
+                                                {% elif order.status == 'Pending' %}#f6c23e
+                                                {% elif order.status == 'Cancelled' %}#e74a3b
+                                                {% elif order.status == 'Shipped' %}#4e73df
+                                                {% elif order.status == 'Delivered' %}#36b9cc
+                                                {% else %}#858796{% endif %};">
+                                            {{ order.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-payment-{{ order.payment_status|lower }}"
+                                              style="background-color:
+                                                {% if order.payment_status == 'Paid' %}#1cc88a
+                                                {% elif order.payment_status == 'Pending' %}#f6c23e
+                                                {% elif order.payment_status == 'Unpaid' %}#e74a3b
+                                                {% elif order.payment_status == 'Failed' %}#e74a3b
+                                                {% else %}#858796{% endif %};">
+                                            {{ order.get_payment_status_display }}
+                                        </span>
+                                    </td>
                                     <td>
                                         <a href="{% url 'order_detail' order.id %}" class="btn btn-outline-info btn-sm action-btn">Details</a>
                                     </td>
                                     <td>
-                                        <form action="{% url 'order:process_return' order.uuid %}" method="post" class="d-inline">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="action" value="approve">
-                                            <button type="submit" class="btn btn-success btn-sm action-btn">Approve</button>
-                                        </form>
-                                        <form action="{% url 'order:process_return' order.uuid %}" method="post" class="d-inline ml-2">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="action" value="reject">
-                                            <button type="submit" class="btn btn-danger btn-sm action-btn">Reject</button>
-                                        </form>
+                                       <form action="{% url 'order:process_return' order.uuid %}" method="post" class="d-inline">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="approve">
+    <button type="submit" class="btn btn-success btn-sm action-btn">Approve</button>
+</form>
+<form action="{% url 'order:process_return' order.uuid %}" method="post" class="d-inline ml-2">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="reject">
+    <button type="submit" class="btn btn-danger btn-sm action-btn">Reject</button>
+</form>
+
                                     </td>
                                 </tr>
                             {% endif %}
@@ -129,14 +172,20 @@
     .badge {
         font-size: 85%;
     }
-    .badge-approved, .badge-paid {
+    .badge-status-approved, .badge-payment-paid {
         background-color: #1cc88a;
     }
-    .badge-pending {
+    .badge-status-pending, .badge-payment-pending {
         background-color: #f6c23e;
     }
-    .badge-cancelled, .badge-unpaid {
+    .badge-status-cancelled, .badge-payment-unpaid, .badge-payment-failed {
         background-color: #e74a3b;
+    }
+    .badge-status-shipped {
+        background-color: #4e73df;
+    }
+    .badge-status-delivered {
+        background-color: #36b9cc;
     }
     .action-btn {
         width: 80px;

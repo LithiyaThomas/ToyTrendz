@@ -6,6 +6,11 @@
     <title>Order Summary</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         header {
             background-color: #ff69b4;
@@ -273,6 +278,28 @@
         });
     });
 });
+document.addEventListener('DOMContentLoaded', (event) => {
+        {% if messages %}
+            const messages = [
+                {% for message in messages %}
+                    {
+                        level: "{{ message.tags }}",
+                        text: "{{ message }}"
+                    },
+                {% endfor %}
+            ];
+            messages.forEach(message => {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-right',
+                    icon: message.level === 'success' ? 'success' : 'error',
+                    title: message.text,
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            });
+        {% endif %}
+    });
     </script>
 </body>
 </html>

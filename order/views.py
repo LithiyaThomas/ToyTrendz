@@ -216,6 +216,7 @@ def proceed_to_payment(request):
         'payment_options': payment_options
     })
 
+
 @login_required
 def place_order(request):
     if request.method == "POST":
@@ -259,11 +260,17 @@ def place_order(request):
                         messages.error(request, f"{item.product.product_name} is no longer available.")
                         return redirect('cart:view_cart')
 
-                cart_total = sum(item.get_total_price() for item in cart_items)
+                # Get the cart total from the session or calculate it
+                cart_total = request.session.get('cart_total', get_cart_total(request.user))
 
+                # Get the coupon discount from the session
+                coupon_discount = request.session.get('coupon_discount', 0)
+
+                # Create the order with the updated total and coupon discount
                 order = Order.objects.create(
                     user=request.user,
                     total_price=cart_total,
+                    coupon_discount=Decimal(request.session.get('coupon_discount', '0')),
                     payment_method=payment_method,
                     address=order_address,
                     status='Pending',
@@ -279,17 +286,12 @@ def place_order(request):
                         price=item.product.offer_price
                     )
 
-                    if item.variant:
-                        if item.variant.variant_stock < item.quantity:
-                            raise ValueError(
-                                f"Not enough stock for {item.product.product_name} - {item.variant.colour_name}")
-                        item.variant.variant_stock -= item.quantity
-                        item.variant.save()
+                # Clear the session data after creating the order
+                if 'cart_total' in request.session:
+                    del request.session['cart_total']
+                if 'coupon_discount' in request.session:
+                    del request.session['coupon_discount']
 
-                cart_items.delete()
-                cart.delete()
-
-                # Handle payment methods
                 if payment_method == 'online_payment':
                     # Razorpay payment logic
                     client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
@@ -327,7 +329,13 @@ def place_order(request):
                         order.payment_status = 'Completed'
                         order.status = 'Confirmed'
                         order.save()
+
+                        # Clear the cart and cart items after successful payment
+                        cart_items.delete()
+                        cart.delete()
+
                         messages.success(request, "Payment successful and order confirmed!")
+                        return redirect('order:order_success', order_uuid=order.uuid)
                     else:
                         messages.error(request, "Insufficient wallet balance.")
                         order.delete()
@@ -336,9 +344,13 @@ def place_order(request):
                 else:  # Cash on Delivery
                     order.status = 'Confirmed'
                     order.save()
-                    messages.success(request, "Your order has been placed successfully!")
 
-                return redirect('order:order_success', order_uuid=order.uuid)
+                    # Clear the cart and cart items after successful order confirmation
+                    cart_items.delete()
+                    cart.delete()
+
+                    messages.success(request, "Your order has been placed successfully!")
+                    return redirect('order:order_success', order_uuid=order.uuid)
 
         except ValueError as e:
             messages.error(request, str(e))
@@ -393,14 +405,11 @@ def order_failure(request, order_uuid):
     }
     return render(request, 'order/order_failure.html', context)
 
-
 @login_required
 def order_success(request, order_uuid):
     order = get_object_or_404(Order, uuid=order_uuid)
     context = {
         'order': order,
-        'order_id': order.id,
-
     }
     return render(request, 'order/order_success.html', context)
 
@@ -466,6 +475,8 @@ def order_detail(request, order_uuid):
 
 
 
+
+
 @require_POST
 def apply_coupon(request):
     coupon_code = request.POST.get('coupon_code', '').strip()
@@ -483,24 +494,25 @@ def apply_coupon(request):
             return JsonResponse({'success': False, 'message': 'This coupon has reached its usage limit.'})
 
         if not coupon.can_be_used_by_user(request.user):
-            return JsonResponse(
-                {'success': False, 'message': 'You have already used this coupon the maximum number of times.'})
+            return JsonResponse({'success': False, 'message': 'You have already used this coupon the maximum number of times.'})
 
         cart_total = get_cart_total(request.user)
 
         if cart_total < coupon.minimum_order_amount:
-            return JsonResponse({'success': False,
-                                 'message': f'Order total must be at least ${coupon.minimum_order_amount} to use this coupon.'})
+            return JsonResponse({'success': False, 'message': f'Order total must be at least ${coupon.minimum_order_amount} to use this coupon.'})
 
         if coupon.maximum_order_amount > 0 and cart_total > coupon.maximum_order_amount:
-            return JsonResponse({'success': False,
-                                 'message': f'Order total must not exceed ${coupon.maximum_order_amount} to use this coupon.'})
+            return JsonResponse({'success': False, 'message': f'Order total must not exceed ${coupon.maximum_order_amount} to use this coupon.'})
 
         # Calculate discount
         discount = Decimal(cart_total) * (coupon.offer_percentage / Decimal('100'))
         discount = discount.quantize(Decimal('0.01'))
         new_total = Decimal(cart_total) - discount
-        new_total = new_total.quantize(Decimal('0.01'))  
+        new_total = new_total.quantize(Decimal('0.01'))
+
+        # Store the new total and discount in session
+        request.session['cart_total'] = float(new_total)
+        request.session['coupon_discount'] = float(discount)
 
         return JsonResponse({
             'success': True,

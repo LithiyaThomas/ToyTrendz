@@ -17,6 +17,7 @@ from django.urls import reverse
 from coupon.models import Coupon
 from django.db.models import Sum
 import logging
+from decimal import Decimal
 @login_required
 def list_orders(request):
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
@@ -462,31 +463,30 @@ def order_detail(request, order_uuid):
     return render(request, 'order/order_detail.html', context)
 
 
+
+
+
 @require_POST
 def apply_coupon(request):
     coupon_code = request.POST.get('coupon_code', '').strip()
+
     if not coupon_code:
         return JsonResponse({'success': False, 'message': 'Coupon code is required.'})
 
     try:
         coupon = Coupon.objects.get(code=coupon_code, is_active=True)
 
-
         if coupon.is_expired():
             return JsonResponse({'success': False, 'message': 'This coupon has expired.'})
 
-
         if coupon.remaining_usage() <= 0:
             return JsonResponse({'success': False, 'message': 'This coupon has reached its usage limit.'})
-
 
         if not coupon.can_be_used_by_user(request.user):
             return JsonResponse(
                 {'success': False, 'message': 'You have already used this coupon the maximum number of times.'})
 
-
         cart_total = get_cart_total(request.user)
-
 
         if cart_total < coupon.minimum_order_amount:
             return JsonResponse({'success': False,
@@ -496,24 +496,21 @@ def apply_coupon(request):
             return JsonResponse({'success': False,
                                  'message': f'Order total must not exceed ${coupon.maximum_order_amount} to use this coupon.'})
 
-
-        discount = cart_total * (coupon.offer_percentage / 100)
-        new_total = cart_total - discount
-        print(discount)
-        print(new_total)
-
-        new_total = round(new_total, 2)
+        # Calculate discount
+        discount = Decimal(cart_total) * (coupon.offer_percentage / Decimal('100'))
+        discount = discount.quantize(Decimal('0.01'))
+        new_total = Decimal(cart_total) - discount
+        new_total = new_total.quantize(Decimal('0.01'))  
 
         return JsonResponse({
             'success': True,
             'message': 'Coupon applied successfully!',
-            'new_total': new_total,
-            'discount': discount
+            'new_total': float(new_total),
+            'discount': float(discount)
         })
 
     except Coupon.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Invalid coupon code.'})
-
 
 def get_cart_total(user):
     try:

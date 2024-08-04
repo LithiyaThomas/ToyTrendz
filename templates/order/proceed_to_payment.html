@@ -235,31 +235,44 @@
         </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
-        // JavaScript for applying coupon code
-        document.getElementById('apply-coupon-btn').addEventListener('click', function() {
-            const couponCode = document.getElementById('coupon_code').value;
-            const couponMessage = document.getElementById('coupon_message');
-            const discountSection = document.getElementById('discount-section');
-            const discountAmount = document.getElementById('discount-amount');
-            const orderTotal = document.getElementById('order-total');
+        $(document).ready(function() {
+    $('#apply-coupon-btn').click(function() {
+        const couponCode = $('#coupon_code').val();
+        const csrfToken = $('input[name="csrfmiddlewaretoken"]').val();
 
-            // Simulate coupon application
-            // In a real scenario, you would send an AJAX request to your server to apply the coupon and get the discount
-            if (couponCode === 'DISCOUNT10') {
-                discountSection.style.display = 'block';
-                discountAmount.textContent = '$10.00'; // Simulated discount amount
-                orderTotal.textContent = '$' + (parseFloat(orderTotal.textContent.replace('$', '')) - 10).toFixed(2);
-                couponMessage.textContent = 'Coupon applied successfully!';
-                couponMessage.className = 'text-success';
-            } else {
-                couponMessage.textContent = 'Invalid coupon code.';
-                couponMessage.className = 'text-danger';
+        $.ajax({
+            url: '{% url "order:apply_coupon" %}',
+            type: 'POST',
+            data: {
+                'coupon_code': couponCode,
+                'csrfmiddlewaretoken': csrfToken
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#coupon_message').text(response.message).removeClass('text-danger').addClass('text-success');
+                    $('#discount-section').show();
+                    $('#discount-amount').text('$' + response.discount.toFixed(2));
+                    $('#order-total').text('$' + response.new_total.toFixed(2));
+
+                    // Log the discount and new total for debugging
+                    console.log('Discount:', response.discount);
+                    console.log('New Total:', response.new_total);
+                } else {
+                    $('#coupon_message').text(response.message).removeClass('text-success').addClass('text-danger');
+                    $('#discount-section').hide();
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#coupon_message').text('An error occurred. Please try again.').removeClass('text-success').addClass('text-danger');
+                console.error('Error:', error);
             }
         });
+    });
+});
     </script>
 </body>
 </html>

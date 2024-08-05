@@ -40,11 +40,10 @@
             signature.value = response.razorpay_signature;
             form.appendChild(signature);
 
-            var csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]').value;
             var csrfInput = document.createElement('input');
             csrfInput.type = 'hidden';
             csrfInput.name = 'csrfmiddlewaretoken';
-            csrfInput.value = csrfToken;
+            csrfInput.value = '{{ csrf_token }}';  // Django template tag for CSRF token
             form.appendChild(csrfInput);
 
             document.body.appendChild(form);
@@ -56,6 +55,7 @@
     };
     var rzp1 = new Razorpay(options);
     rzp1.open();
-</script>
+    </script>
 </body>
 </html>
+

@@ -273,8 +273,8 @@ header .icon:hover {
                         <button type="button" class="btn btn-outline-secondary" id="quantity-plus">+</button>
                     </div>
                            <button type="submit" class="add-to-cart-btn mt-3">Add to Cart</button>
-       <button type="button" class="btn btn-outline-secondary add-to-wishlist-btn mt-3">
-    <i class="far fa-heart"></i> Add to Wishlist
+     <button type="button" class="btn btn-outline-secondary add-to-wishlist-btn mt-3" data-variant-id="{{ variant.id }}" data-in-wishlist="{% if variant in user.wishlist_set.all %}true{% else %}false{% endif %}">
+    <i class="far fa-heart"></i> <span class="wishlist-text">{% if variant in user.wishlist_set.all %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}</span>
 </button>
                 </form>
             </div>

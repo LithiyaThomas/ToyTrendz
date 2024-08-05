@@ -222,22 +222,17 @@ class AddToWishlistView(LoginRequiredMixin, View):
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)})
 
-
 class RemoveFromWishlistView(LoginRequiredMixin, View):
     login_url = 'user_login'
 
     def post(self, request, variant_id):
         try:
-
             print(f"Trying to remove variant_id: {variant_id}")
-
             wishlist_item = Wishlist.objects.get(user=request.user, product_variant_id=variant_id)
             wishlist_item.delete()
             return JsonResponse({'success': True, 'message': 'Product removed from wishlist.'})
         except Wishlist.DoesNotExist:
-
             print(f"Wishlist item not found for variant_id: {variant_id}")
-
             return JsonResponse({'success': False, 'message': 'Product not found in wishlist.'})
 
 class WishlistListView(LoginRequiredMixin, ListView):

@@ -18,10 +18,11 @@ from coupon.models import Coupon
 from django.db.models import Sum
 import logging
 from decimal import Decimal
+
+
 @login_required
 def list_orders(request):
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
-
 
     orders = orders.prefetch_related(
         'items',
@@ -29,9 +30,14 @@ def list_orders(request):
         'items__variant'
     )
 
-
+    order_subtotals = {}
     for order in orders:
-        order.subtotal = sum(item.price * item.quantity for item in order.items.all())
+        subtotal = sum(item.product.offer_price * item.quantity for item in order.items.all())
+        order_subtotals[order.id] = {
+            'subtotal': subtotal,
+            'total_with_discount': order.total_price,
+            'coupon_discount': order.coupon_discount
+        }
 
     paginator = Paginator(orders, 10)
     page = request.GET.get('page')
@@ -46,6 +52,7 @@ def list_orders(request):
     context = {
         'orders': paginated_orders,
         'order_count': orders.count(),
+        'order_subtotals': order_subtotals,
     }
 
     return render(request, 'order/order_list.html', context)
@@ -283,9 +290,9 @@ def place_order(request):
                         product=item.product,
                         variant=item.variant,
                         quantity=item.quantity,
-                        price=item.product.offer_price
-                    )
+                        price=item.product.price,
 
+                    )
                 # Clear the session data after creating the order
                 if 'cart_total' in request.session:
                     del request.session['cart_total']
@@ -293,7 +300,6 @@ def place_order(request):
                     del request.session['coupon_discount']
 
                 if payment_method == 'online_payment':
-                    # Razorpay payment logic
                     client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
                     razorpay_order = client.order.create({
                         'amount': int(cart_total * 100),
@@ -371,9 +377,7 @@ def razorpay_callback(request):
         client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 
         try:
-
             order = Order.objects.get(razorpay_order_id=razorpay_order_id)
-
 
             params_dict = {
                 'razorpay_order_id': razorpay_order_id,
@@ -382,10 +386,14 @@ def razorpay_callback(request):
             }
             client.utility.verify_payment_signature(params_dict)
 
-
             order.payment_status = 'Completed'
             order.status = 'Confirmed'
             order.save()
+            # Clear the cart and cart items after successful order confirmation
+            cart = Cart.objects.get(user=request.user)
+            cart_items = CartItem.objects.filter(cart=cart)
+            cart_items.delete()
+            cart.delete()
 
             return redirect('order:order_success', order_uuid=order.uuid)
         except Order.DoesNotExist:
@@ -393,13 +401,15 @@ def razorpay_callback(request):
         except razorpay.errors.SignatureVerificationError:
             return redirect('order:order_failure', order_uuid=order.uuid)
         except Exception as e:
-            return redirect('order:order_failure', order_uuid=razorpay_order_id)
+            # Log the error if needed
+            print(f"Error: {str(e)}")
+            return redirect('order:order_failure', order_uuid=order.uuid)
 
     return HttpResponse(status=400)
 
-
 def order_failure(request, order_uuid):
     order = get_object_or_404(Order, uuid=order_uuid)
+
     context = {
         'order': order,
     }
@@ -408,8 +418,12 @@ def order_failure(request, order_uuid):
 @login_required
 def order_success(request, order_uuid):
     order = get_object_or_404(Order, uuid=order_uuid)
+    order_items = OrderItem.objects.filter(order=order)
+
     context = {
         'order': order,
+        'order_items': order_items,
+
     }
     return render(request, 'order/order_success.html', context)
 
@@ -453,13 +467,13 @@ def add_address(request):
 def order_detail(request, order_uuid):
     order = get_object_or_404(Order, uuid=order_uuid, user=request.user)
 
-
     user = order.user
     address = order.address
-    items = OrderItem.objects.filter(order=order)
+    items = order.items.all()
 
-
-    subtotal = sum(item.price * item.quantity for item in items)
+    subtotal = sum(item.product.offer_price * item.quantity for item in items)
+    total_with_discount = order.total_price
+    coupon_discount = order.coupon_discount
 
     context = {
         'order': order,
@@ -467,15 +481,11 @@ def order_detail(request, order_uuid):
         'address': address,
         'items': items,
         'subtotal': subtotal,
+        'total_with_discount': total_with_discount,
+        'coupon_discount': coupon_discount,
     }
 
     return render(request, 'order/order_detail.html', context)
-
-
-
-
-
-
 
 @require_POST
 def apply_coupon(request):
@@ -501,11 +511,15 @@ def apply_coupon(request):
         if cart_total < coupon.minimum_order_amount:
             return JsonResponse({'success': False, 'message': f'Order total must be at least ${coupon.minimum_order_amount} to use this coupon.'})
 
-        if coupon.maximum_order_amount > 0 and cart_total > coupon.maximum_order_amount:
-            return JsonResponse({'success': False, 'message': f'Order total must not exceed ${coupon.maximum_order_amount} to use this coupon.'})
+        # if coupon.maximum_order_amount > 0 and cart_total > coupon.maximum_order_amount:
+        #     return JsonResponse({'success': False, 'message': f'Order total must not exceed ${coupon.maximum_order_amount} to use this coupon.'})
 
         # Calculate discount
         discount = Decimal(cart_total) * (coupon.offer_percentage / Decimal('100'))
+        if discount <coupon.maximum_order_amount:
+            discount = discount
+        else:
+            discount = coupon.maximum_order_amount
         discount = discount.quantize(Decimal('0.01'))
         new_total = Decimal(cart_total) - discount
         new_total = new_total.quantize(Decimal('0.01'))

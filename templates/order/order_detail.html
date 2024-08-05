@@ -1,3 +1,4 @@
+{% load custom_filters %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -67,7 +68,7 @@
             </div>
         </div>
     </header>
-    <div class="container mt-4">
+   <div class="container mt-4">
         <h2 class="mb-4 text-center">Order Details</h2>
         <div class="row g-4">
             <div class="col-md-6">
@@ -76,7 +77,8 @@
                         <h5 class="card-title text-primary">Order Information</h5>
                         <p class="mb-1"><strong>Order ID:</strong> {{ order.uuid }}</p>
                         <p class="mb-1"><strong>Status:</strong> <span class="order-status status-{{ order.status|lower }}">{{ order.get_status_display }}</span></p>
-                        <p class="mb-1"><strong>Total Price:</strong> ${{ order.total_price|floatformat:2 }}</p>
+                        <p class="mb-1"><strong>Payment Status:</strong> {{ order.get_payment_status_display }}</p>
+                        <p class="mb-1"><strong>Total Price:</strong> ₹{{ order.total_price|floatformat:2 }}</p>
                     </div>
                 </div>
             </div>
@@ -84,7 +86,7 @@
                 <div class="card h-100 shadow-sm">
                     <div class="card-body">
                         <h5 class="card-title text-primary">User & Shipping Information</h5>
-                        <p class="mb-1"><strong>Name:</strong> {{ user.full_name }}</p>
+                        <p class="mb-1"><strong>Name:</strong> {{ address.full_name }}</p>
                         <p class="mb-1"><strong>Email:</strong> {{ user.email }}</p>
                         <p class="mb-1"><strong>Address:</strong> {{ address.address_line_1 }}{% if address.address_line_2 %}, {{ address.address_line_2 }}{% endif %}, {{ address.city }}, {{ address.state }} {{ address.postal_code }}, {{ address.country }}</p>
                         <p class="mb-1"><strong>Phone:</strong> {{ address.phone_number }}</p>
@@ -104,6 +106,7 @@
                                 <th>Product</th>
                                 <th>Quantity</th>
                                 <th>Price</th>
+                                <th>Subtotal</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -120,7 +123,8 @@
                                 </td>
                                 <td>{{ item.product.product_name }} - {{ item.variant.colour_name }}</td>
                                 <td>{{ item.quantity }}</td>
-                                <td>${{ item.price|floatformat:2 }}</td>
+                                <td>₹{{ item.product.offer_price|floatformat:2 }}</td>
+                                <td>₹{{ item.product.offer_price|multiply:item.quantity|floatformat:2 }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -137,9 +141,18 @@
                         <tbody>
                             <tr>
                                 <td><strong>Subtotal:</strong></td>
-                                <td>${{ subtotal|floatformat:2 }}</td>
+                                <td>₹{{ subtotal|floatformat:2 }}</td>
                             </tr>
-
+                            {% if order.coupon_discount > 0 %}
+                            <tr>
+                                <td><strong>Coupon Discount:</strong></td>
+                                <td class="text-success">-₹{{ order.coupon_discount|floatformat:2 }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <td><strong>Total Price:</strong></td>
+                                <td><strong>₹{{ order.total_price|floatformat:2 }}</strong></td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

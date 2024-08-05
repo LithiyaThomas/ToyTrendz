@@ -1,3 +1,4 @@
+{% load custom_filters %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -181,8 +182,7 @@
         <a href="{% url 'home' %}" class="btn btn-primary return-btn">
             <i class="bi bi-arrow-left"></i> Return to Shopping
         </a>
-
-        {% if orders %}
+  {% if orders %}
             {% for order in orders %}
                 <div class="order-wrapper mb-4" style="border: 1px solid #ddd; border-radius: 8px; padding: 20px; position: relative;">
                     <div class="order-info mb-3">
@@ -202,8 +202,8 @@
                             <div class="product-details">
                                 <div class="product-name">{{ item.product.product_name }} - {{ item.variant.colour_name }}</div>
                                 <div class="product-quantity">Qty: {{ item.quantity }}</div>
+                                <div class="product-price">₹{{ item.product.offer_price }}</div>
                             </div>
-                            <div class="product-price">₹{{ item.price }}</div>
                             <div class="order-status">
                                 <div class="status-icon">
                                     {% if order.status == 'Cancelled' %}X{% else %}!{% endif %}
@@ -220,9 +220,15 @@
                             </div>
                         </div>
                     {% endfor %}
-                    <div class="order-subtotal mt-3">
-                        <strong>Order Subtotal: ₹{{ order.total_price }}</strong>
+
+                    <div class="order-total mt-3">
+                        <div>Subtotal: ₹{{ order_subtotals|get_item:order.id|get_item:'subtotal' }}</div>
+                        {% if order.coupon_discount %}
+                            <div>Coupon Discount: -₹{{ order.coupon_discount }}</div>
+                        {% endif %}
+                        <strong>Total: ₹{{ order.total_price }}</strong>
                     </div>
+
                     <div class="button-group">
                         {% if order.status == 'Pending' or order.status == 'Confirmed' or order.status == 'Shipped' %}
                             <button type="button" class="btn btn-danger btn-sm cancel-order" data-order-uuid="{{ order.uuid }}">Cancel Order</button>

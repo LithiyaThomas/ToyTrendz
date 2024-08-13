@@ -28,6 +28,17 @@ class OrderStatusForm(forms.ModelForm):
         if current_status == 'Cancelled':
             self.fields['status'].choices = [choice for choice in all_status_choices if choice[0] == 'Cancelled']
         else:
-
             self.fields['status'].choices = all_status_choices
 
+
+    def save(self, commit=True):
+
+        order = super().save(commit=False)
+
+        if order.status == 'Delivered':
+            order.payment_status = 'Completed'
+
+        if commit:
+            order.save()
+
+        return order

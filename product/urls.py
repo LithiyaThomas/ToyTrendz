@@ -28,5 +28,5 @@ urlpatterns = [
  # Demo View
     path('demo/', DemoView.as_view(), name='demo_view'),
 
-    # Add more URLs as needed for your project
+
 ]

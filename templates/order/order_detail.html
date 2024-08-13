@@ -68,6 +68,11 @@
             </div>
         </div>
     </header>
+
+    <div class="container mt-4">
+        <div class="text-center mb-4">
+            <a href="{% url 'user_panel:download_invoice' order.uuid %}" class="btn btn-primary">Download Invoice</a>
+        </div>
    <div class="container mt-4">
         <h2 class="mb-4 text-center">Order Details</h2>
         <div class="row g-4">

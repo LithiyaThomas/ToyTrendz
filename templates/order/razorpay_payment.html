@@ -43,7 +43,7 @@
             var csrfInput = document.createElement('input');
             csrfInput.type = 'hidden';
             csrfInput.name = 'csrfmiddlewaretoken';
-            csrfInput.value = '{{ csrf_token }}';  // Django template tag for CSRF token
+            csrfInput.value = '{{ csrf_token }}';
             form.appendChild(csrfInput);
 
             document.body.appendChild(form);

@@ -187,7 +187,7 @@ def update_quantity(request, item_id):
         cart_item.save()
 
         # Calculate item total and cart total
-        item_price = cart_item.variant.product.price
+        item_price = cart_item.variant.product.offer_price
         item_total = item_price * quantity
 
         # Get all cart items for the user

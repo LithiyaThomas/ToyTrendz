@@ -396,7 +396,9 @@ header .icon:hover {
         {% for related_product in related_products %}
         <div class="col-md-3">
             <div class="card">
+                {% if related_product.thumbnail.url %}
                 <img src="{{ related_product.thumbnail.url }}" class="card-img-top" alt="{{ related_product.product_name }}">
+                {% endif  %}
                 <div class="card-body">
                     <h5 class="card-title">{{ related_product.product_name }}</h5>
                     <p class="card-text">${{ related_product.price }}</p>
@@ -598,11 +600,36 @@ function getCookie(name) {
     return cookieValue;
 }
 </script>
-
-
 <script>
-// Updated Wishlist functionality
-function addToWishlist() {
+// Wishlist functionality
+function updateWishlistButton(variantId) {
+    const wishlistBtn = document.querySelector('.add-to-wishlist-btn');
+    const icon = wishlistBtn.querySelector('i');
+    const textSpan = wishlistBtn.querySelector('.wishlist-text');
+
+    // Check if the variant is in the wishlist
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', `{% url 'user_panel:check_wishlist' %}?variant_id=${variantId}`, true);
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            if (response.in_wishlist) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                textSpan.textContent = 'Remove from Wishlist';
+                wishlistBtn.classList.add('active');
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                textSpan.textContent = 'Add to Wishlist';
+                wishlistBtn.classList.remove('active');
+            }
+        }
+    };
+    xhr.send();
+}
+
+function toggleWishlist() {
     const selectedVariant = document.querySelector('input[name="variant"]:checked');
     if (!selectedVariant) {
         Swal.fire({
@@ -617,39 +644,27 @@ function addToWishlist() {
     }
 
     const variantId = selectedVariant.value;
-    console.log('Adding to wishlist, variant ID:', variantId);
+    const wishlistBtn = document.querySelector('.add-to-wishlist-btn');
+    const action = wishlistBtn.classList.contains('active') ? 'remove' : 'add';
 
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', '{% url "user_panel:add_to_wishlist" %}', true);
+    xhr.open('POST', '{% url "user_panel:toggle_wishlist" %}', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
 
     xhr.onload = function() {
         if (xhr.status === 200) {
-            try {
-                const response = JSON.parse(xhr.responseText);
-                Swal.fire({
-                    toast: true,
-                    position: 'top-right',
-                    icon: response.success ? 'success' : 'error',
-                    title: response.message,
-                    showConfirmButton: false,
-                    timer: 3000
-                });
-                if (response.success) {
-                    const wishlistBtn = document.querySelector('.add-to-wishlist-btn');
-                    wishlistBtn.classList.add('active');
-                }
-            } catch (e) {
-                console.error('Error parsing JSON response:', e);
-                Swal.fire({
-                    toast: true,
-                    position: 'top-right',
-                    icon: 'error',
-                    title: 'An error occurred while updating the wishlist.',
-                    showConfirmButton: false,
-                    timer: 3000
-                });
+            const response = JSON.parse(xhr.responseText);
+            Swal.fire({
+                toast: true,
+                position: 'top-right',
+                icon: response.success ? 'success' : 'error',
+                title: response.message,
+                showConfirmButton: false,
+                timer: 3000
+            });
+            if (response.success) {
+                updateWishlistButton(variantId);
             }
         } else {
             Swal.fire({
@@ -663,46 +678,27 @@ function addToWishlist() {
         }
     };
 
-    xhr.onerror = function() {
-        Swal.fire({
-            toast: true,
-            position: 'top-right',
-            icon: 'error',
-            title: 'An error occurred while updating the wishlist.',
-            showConfirmButton: false,
-            timer: 3000
-        });
-    };
-
-    xhr.send('variant_id=' + variantId);
+    xhr.send(`variant_id=${variantId}&action=${action}`);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
     const wishlistBtn = document.querySelector('.add-to-wishlist-btn');
     if (wishlistBtn) {
-        wishlistBtn.addEventListener('click', addToWishlist);
+        wishlistBtn.addEventListener('click', toggleWishlist);
     }
 
-    {% if messages %}
-        const messages = [
-            {% for message in messages %}
-                {
-                    level: "{{ message.tags }}",
-                    text: "{{ message }}"
-                },
-            {% endfor %}
-        ];
-        messages.forEach(message => {
-            Swal.fire({
-                toast: true,
-                position: 'top-right',
-                icon: message.level === 'success' ? 'success' : 'error',
-                title: message.text,
-                showConfirmButton: false,
-                timer: 3000
-            });
+    const variantInputs = document.querySelectorAll('input[name="variant"]');
+    variantInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            updateWishlistButton(this.value);
         });
-    {% endif %}
+    });
+
+    // Initialize wishlist button state for the initially selected variant
+    const initialVariant = document.querySelector('input[name="variant"]:checked');
+    if (initialVariant) {
+        updateWishlistButton(initialVariant.value);
+    }
 });
 </script>
 

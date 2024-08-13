@@ -9,7 +9,7 @@ from django.db.models import Sum
 from accounts.models import User, Wallet, WalletTransaction
 from order.models import Order, OrderItem, Payment
 from .forms import AdminLoginForm, OrderStatusForm
-
+from django.http import JsonResponse
 # Check if user is admin
 def is_admin(user):
     return user.is_authenticated and user.is_admin
@@ -147,12 +147,14 @@ def cancel_order(request, pk):
 
     return render(request, 'adminside/cancel_order.html', {'order': order})
 
+
 @user_passes_test(is_admin)
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def order_detail(request, pk):
     order = get_object_or_404(Order, pk=pk)
     order_items = OrderItem.objects.filter(order=order)
     return render(request, 'adminside/order_detail.html', {'order': order, 'order_items': order_items})
+
 
 def sales_report(request):
     if request.method == 'POST':
@@ -164,13 +166,51 @@ def sales_report(request):
                 start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
                 end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
             except ValueError:
-                messages.error(request, 'Invalid date format.')
-                return redirect('sales_report')
+                return JsonResponse({'error': 'Invalid date format'}, status=400)
 
             orders = Order.objects.filter(created_at__date__range=[start_date, end_date], status="Delivered")
-            total_sales = orders.aggregate(total=Sum('total_price'))['total'] or 0
-            return render(request, 'adminside/salesreport.html', {'orders': orders, 'total_sales': total_sales, 'start_date': start_date, 'end_date': end_date})
+        else:
+            orders = Order.objects.filter(status="Delivered")
 
+        order_items = OrderItem.objects.filter(order__in=orders)
+        total_sales = orders.aggregate(total=Sum('total_price'))['total'] or 0
+
+        product_counts = order_items.values('product__product_name').annotate(
+            total_quantity=Sum('quantity')
+        ).order_by('product__product_name')
+
+        # Include product details with each order
+        order_details = orders.prefetch_related('orderitem_set__product').values(
+            'created_at', 'uuid', 'user__username', 'total_price', 'payment_method', 'coupon_code'
+        ).annotate(
+            products=OrderItem.objects.filter(order_id=F('id')).values(
+                'product__product_name'
+            ).annotate(
+                total_quantity=Sum('quantity')
+            ).order_by('product__product_name')
+        )
+
+        data = {
+            'orders': list(order_details),
+            'total_sales': float(total_sales),
+            'product_counts': list(product_counts),
+        }
+
+        return JsonResponse(data)
+
+    # Default view for GET request
     orders = Order.objects.filter(status="Delivered")
+    order_items = OrderItem.objects.filter(order__in=orders)
     total_sales = orders.aggregate(total=Sum('total_price'))['total'] or 0
-    return render(request, 'adminside/salesreport.html', {'orders': orders, 'total_sales': total_sales})
+
+    product_counts = order_items.values('product__product_name').annotate(
+        total_quantity=Sum('quantity')
+    ).order_by('product__product_name')
+
+    context = {
+        'orders': orders,
+        'total_sales': total_sales,
+        'product_counts': product_counts,
+    }
+
+    return render(request, 'adminside/salesreport.html', context)

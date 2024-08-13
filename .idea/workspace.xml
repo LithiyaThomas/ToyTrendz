@@ -20,15 +20,32 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1bd12e59-14b0-4c90-96db-f9391668bcc7" name="Default Changelist" comment="added product">
+      <change afterPath="$PROJECT_DIR$/user_panel/utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/order/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/order/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/admin_panel/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/admin_panel/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/admin_panel/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/admin_panel/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cart/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/cart/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coupon/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/coupon/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/order/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/order/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/order/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/order/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/product/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/product/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/product/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/product/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/adminside/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/adminside/base.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/adminside/salesreport.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/adminside/salesreport.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/offer/category_offer_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/offer/category_offer_list.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/order/order_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/order/order_detail.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/order/order_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/order/order_list.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/order/order_success.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/order/order_success.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/order/proceed_to_payment.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/order/proceed_to_payment.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/order/razorpay_payment.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/order/razorpay_payment.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/product/product_variant_form.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/product/product_variant_form.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/userside/product_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/userside/product_detail.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/userside/product_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/userside/product_list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/userside/wallet.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/userside/wallet.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/userside/wishlist.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/userside/wishlist.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/user_panel/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/user_panel/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/user_panel/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/user_panel/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/user_panel/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/user_panel/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/user_panel/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/user_panel/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -58,6 +75,7 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
@@ -100,6 +118,10 @@
       <screen x="0" y="0" width="1280" height="720" />
     </state>
     <state x="421" y="116" key="FileChooserDialogImpl/0.0.1280.720@0.0.1280.720" timestamp="1718446956626" />
+    <state x="142" y="6" key="SettingsEditor" timestamp="1723525104572">
+      <screen x="0" y="0" width="1280" height="720" />
+    </state>
+    <state x="142" y="6" key="SettingsEditor/0.0.1280.720@0.0.1280.720" timestamp="1723525104572" />
     <state x="233" y="114" key="Vcs.Push.Dialog.v2" timestamp="1718855787912">
       <screen x="0" y="40" width="1280" height="680" />
     </state>

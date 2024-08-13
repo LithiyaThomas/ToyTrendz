@@ -229,10 +229,14 @@
                         <strong>Total: ₹{{ order.total_price }}</strong>
                     </div>
 
-                    <div class="button-group">
+                <div class="button-group">
                         {% if order.status == 'Pending' or order.status == 'Confirmed' or order.status == 'Shipped' %}
-                            <button type="button" class="btn btn-danger btn-sm cancel-order" data-order-uuid="{{ order.uuid }}">Cancel Order</button>
-                        {% endif %}
+    <form id="cancel-order-form-{{ order.uuid }}" action="{% url 'order:cancel_order' order.uuid %}" method="post" style="display: inline;">
+        {% csrf_token %}
+        <button type="button" class="btn btn-danger btn-sm cancel-order" data-order-uuid="{{ order.uuid }}">Cancel Order</button>
+    </form>
+{% endif %}
+
                         {% if order.status == 'Delivered' %}
                             <form action="{% url 'order:return_order' order.uuid %}" method="POST" class="d-inline">
                                 {% csrf_token %}
@@ -291,66 +295,59 @@
             </ul>
         </nav>
     </div>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <script>
- document.addEventListener('DOMContentLoaded', function() {
-    const cancelButtons = document.querySelectorAll('.cancel-order');
-    cancelButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const orderUuid = this.getAttribute('data-order-uuid');
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, cancel Order!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // If confirmed, submit the form
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = `/order/orders/${orderUuid}/cancel/`; // Updated URL
-                    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-                    const csrfInput = document.createElement('input');
-                    csrfInput.type = 'hidden';
-                    csrfInput.name = 'csrfmiddlewaretoken';
-                    csrfInput.value = csrfToken;
-                    form.appendChild(csrfInput);
-                    document.body.appendChild(form);
-                    form.submit();
-                }
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const cancelButtons = document.querySelectorAll('.cancel-order');
+        cancelButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const orderUuid = this.getAttribute('data-order-uuid');
+                const form = document.getElementById(`cancel-order-form-${orderUuid}`);
+
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You won't be able to revert this!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, cancel Order!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();  // Submit the form if confirmed
+                    }
+                });
             });
         });
     });
-});
-    </script>
-   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', (event) => {
-        {% if messages %}
-            const messages = [
-                {% for message in messages %}
-                    {
-                        level: "{{ message.tags }}",
-                        text: "{{ message }}"
-                    },
-                {% endfor %}
-            ];
-            messages.forEach(message => {
-                Swal.fire({
-                    toast: true,
-                    position: 'top-right',
-                    icon: message.level === 'success' ? 'success' : 'error',
-                    title: message.text,
-                    showConfirmButton: false,
-                    timer: 3000
-                });
-            });
-        {% endif %}
-    });
 </script>
-</body>
 
-</html>
+
+   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            {% if messages %}
+                const messages = [
+                    {% for message in messages %}
+                        {
+                            level: "{{ message.tags }}",
+                            text: "{{ message }}"
+                        },
+                    {% endfor %}
+                ];
+                messages.forEach(message => {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-right',
+                        icon: message.level === 'success' ? 'success' : 'error',
+                        title: message.text,
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+                });
+            {% endif %}
+        });
+    </script>
+</body>
+</html>|

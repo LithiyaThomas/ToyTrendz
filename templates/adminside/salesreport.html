@@ -23,7 +23,7 @@
     </div>
 
     <div class="mb-4">
-        <form method="post" action="" class="row g-2">
+        <form method="post" action="{% url 'sales_report' %}" class="row g-2">
             {% csrf_token %}
             <div class="col-auto d-flex align-items-center">
                 <h5 class="mb-0">Start Date:</h5>
@@ -55,6 +55,7 @@
                             <th>Order Total</th>
                             <th>Payment Method</th>
                             <th>Coupon</th>
+                            <th>Products</th> <!-- Added column for products -->
                         </tr>
                     </thead>
                     <tbody>
@@ -65,11 +66,20 @@
                                 <td>{{ order.user.username }}</td>
                                 <td>{{ order.total_price }}</td>
                                 <td>{{ order.get_payment_method_display }}</td>
-                                <td>{{ order.coupon_code|default:"Nil" }}</td>
+                                <td>{{ order.coupon_discount  }}</td>
+                                <td>
+                                    <ul>
+                                    {% for item in order.items.all %}
+                                        <li>{{ item.product.product_name }} ({{ item.variant|default:"N/A" }}): {{ item.quantity }}</li>
+                                    {% empty %}
+                                        <li>No products</li>
+                                    {% endfor %}
+                                    </ul>
+                                </td>
                             </tr>
                         {% empty %}
                             <tr>
-                                <td colspan="6">No orders found</td>
+                                <td colspan="7">No orders found</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -79,76 +89,163 @@
         </div>
     </div>
 
-    <div class="pagination-area mt-30 mb-50">
-        <nav aria-label="Page navigation example">
-            <ul class="pagination justify-content-start">
-                <li class="page-item active"><a class="page-link" href="#">01</a></li>
-                <li class="page-item"><a class="page-link" href="#">02</a></li>
-                <li class="page-item"><a class="page-link" href="#">03</a></li>
-                <li class="page-item"><a class="page-link dot" href="#">...</a></li>
-                <li class="page-item"><a class="page-link" href="#">16</a></li>
-                <li class="page-item"><a class="page-link" href="#"><i class="material-icons md-chevron_right"></i></a></li>
-            </ul>
-        </nav>
+    <div class="card mb-4">
+        <div class="card-body">
+            <h4>Product Details</h4>
+            <div class="table-responsive">
+                <table class="table table-striped" id="product-table">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Total Quantity Sold</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in product_counts %}
+                            <tr>
+                                <td>{{ product.product__product_name }}</td>
+                                <td>{{ product.total_quantity }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="2">No products found</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </section>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded and parsed');
+
     document.getElementById('download-pdf').addEventListener('click', function () {
+        console.log('PDF download button clicked');
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        const table = document.getElementById('sales-table');
-        const totalSales = document.querySelector('h3.mt-4').textContent;
+        if (!jsPDF) {
+            console.error('jsPDF not loaded');
+            alert('PDF library not loaded. Please check your internet connection and try again.');
+            return;
+        }
 
-        doc.text("Sales Report", 14, 22);
+        fetch('{% url "sales_report" %}', {
+            method: 'POST',
+            body: new URLSearchParams(new FormData(document.querySelector('form'))),
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Received data:', data);
 
-        doc.autoTable({
-            html: table,
-            startY: 30,
-            theme: 'striped',
-            headStyles: {
-                fillColor: [0, 0, 0],
-                textColor: [255, 255, 255],
-                fontSize: 12,
-                fontStyle: 'bold'
-            },
-            bodyStyles: {
-                fontSize: 10,
-                halign: 'center'
-            },
-            alternateRowStyles: {
-                fillColor: [240, 240, 240]
-            },
-            margin: { top: 40 }
+            const doc = new jsPDF();
+
+            // Generate PDF content
+            doc.text("Sales Report", 14, 22);
+
+            // Orders table
+            doc.autoTable({
+                head: [['Date', 'Order ID', 'Customer', 'Order Total', 'Payment Method', 'Coupon']],
+                body: data.orders.map(order => [
+                    new Date(order.created_at).toLocaleDateString(),
+                    order.uuid,
+                    order.user__username,
+                    order.total_price,
+                    order.payment_method,
+                    order.coupon_code || 'Nil'
+                ]),
+                startY: 30,
+                theme: 'striped',
+                headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontSize: 12, fontStyle: 'bold' },
+                bodyStyles: { fontSize: 10, halign: 'center' },
+                alternateRowStyles: { fillColor: [240, 240, 240] },
+                margin: { top: 40 }
+            });
+
+            doc.text(`Total Sales: ${data.total_sales.toFixed(2)}`, 14, doc.autoTable.previous.finalY + 10);
+
+            // Product details table
+            doc.addPage();
+            doc.text("Product Details", 14, 22);
+            doc.autoTable({
+                head: [['Product Name', 'Total Quantity Sold']],
+                body: data.product_counts.map(item => [item.product__product_name, item.total_quantity]),
+                startY: 30,
+                theme: 'striped',
+                headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontSize: 12, fontStyle: 'bold' },
+                bodyStyles: { fontSize: 10, halign: 'center' },
+                alternateRowStyles: { fillColor: [240, 240, 240] },
+                margin: { top: 40 }
+            });
+
+            doc.save('sales-report.pdf');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while generating the PDF. Please check the console for more details.');
         });
-
-        doc.text(totalSales, 14, doc.autoTable.previous.finalY + 10);
-
-        doc.save('sales_report.pdf');
     });
 
     document.getElementById('download-excel').addEventListener('click', function () {
-        const table = document.getElementById('sales-table');
-        const ws = XLSX.utils.table_to_sheet(table);
-        const wb = XLSX.utils.book_new();
-
-        // Style the header
-        const headerStyle = {
-            font: { bold: true, color: { rgb: "FFFFFF" } },
-            fill: { fgColor: { rgb: "000000" } },
-            alignment: { horizontal: "center" }
-        };
-
-        const range = XLSX.utils.decode_range(ws['!ref']);
-        for (let C = range.s.c; C <= range.e.c; ++C) {
-            const cell_address = XLSX.utils.encode_cell({ c: C, r: range.s.r });
-            if (!ws[cell_address]) continue;
-            ws[cell_address].s = headerStyle;
+        console.log('Excel download button clicked');
+        if (!XLSX) {
+            console.error('XLSX library not loaded');
+            alert('Excel library not loaded. Please check your internet connection and try again.');
+            return;
         }
 
-        XLSX.utils.book_append_sheet(wb, ws, "Sales Report");
-        XLSX.writeFile(wb, "sales_report.xlsx");
+        fetch('{% url "sales_report" %}', {
+            method: 'POST',
+            body: new URLSearchParams(new FormData(document.querySelector('form'))),
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Received data:', data);
+
+            const wb = XLSX.utils.book_new();
+
+            // Orders sheet
+            const ws1 = XLSX.utils.json_to_sheet(data.orders.map(order => ({
+                Date: new Date(order.created_at).toLocaleDateString(),
+                'Order ID': order.uuid,
+                Customer: order.user__username,
+                'Order Total': order.total_price,
+                'Payment Method': order.payment_method,
+                Coupon: order.coupon_code || 'Nil'
+            })));
+            XLSX.utils.book_append_sheet(wb, ws1, 'Orders');
+
+            // Product details sheet
+            const ws2 = XLSX.utils.json_to_sheet(data.product_counts);
+            XLSX.utils.book_append_sheet(wb, ws2, 'Product Details');
+
+            XLSX.writeFile(wb, 'sales-report.xlsx');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while generating the Excel file. Please check the console for more details.');
+        });
     });
+});
 </script>
 
 {% endblock %}

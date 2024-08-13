@@ -1,21 +1,30 @@
-from django.views.generic import ListView, DetailView, View,UpdateView
-from django.shortcuts import redirect, get_object_or_404,render
+from django.views.generic import TemplateView
+from django.contrib.auth import get_user_model
+from django.views.generic import ListView, DetailView, View, UpdateView
+from django.shortcuts import redirect, render
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Prefetch, Q
-from product.models import Product, Category, Rating, ProductVariant, ProductVariantImage
-from .forms import RatingForm
-from django.views.generic import TemplateView
-from accounts.models import Address
 from django.urls import reverse_lazy
 from django.contrib.auth.views import PasswordChangeView
-from .forms import SimpleUserChangeForm,CustomPasswordChangeForm
-from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.utils import timezone
+from django.db.models import Avg
+from product.models import Product, Rating, ProductVariant, ProductVariantImage
+from .forms import RatingForm, SimpleUserChangeForm, CustomPasswordChangeForm
+from accounts.models import Address
+from category.models import Category
 from cart.models import Wishlist
+from offer.models import CategoryOffer
+from io import BytesIO
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+from order.models import Order
+from . import InvoicePDF
 
 User = get_user_model()
-
 
 class UserPanelProductListView(ListView):
     model = Product
@@ -32,7 +41,7 @@ class UserPanelProductListView(ListView):
 
         query = self.request.GET.get('q')
         category_id = self.request.GET.get('category')
-        sort_by = self.request.GET.getlist('sort_by')  # Change to getlist to handle multiple values
+        sort_by = self.request.GET.getlist('sort_by')
 
         if query:
             queryset = queryset.filter(
@@ -72,6 +81,20 @@ class UserPanelProductListView(ListView):
         context['search_query'] = self.request.GET.get('q', '')
         context['category_id'] = self.request.GET.get('category', '')
         context['sort_by'] = self.request.GET.getlist('sort_by')
+        return context
+
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['categories'] = Category.objects.all()
+        context['search_query'] = self.request.GET.get('q', '')
+        context['category_id'] = self.request.GET.get('category', '')
+        context['sort_by'] = self.request.GET.getlist('sort_by')
+        # Include active offers in context if needed
+        context['offers'] = CategoryOffer.objects.filter(
+            start_date__lte=timezone.now().date(),
+            end_date__gte=timezone.now().date()
+        )
         return context
 
 class ProductDetailView(DetailView):
@@ -243,3 +266,81 @@ class WishlistListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Wishlist.objects.filter(user=self.request.user)
+
+@login_required
+@require_POST
+def toggle_wishlist(request):
+    variant_id = request.POST.get('variant_id')
+    action = request.POST.get('action')
+
+    if not variant_id or not action:
+        return JsonResponse({'success': False, 'message': 'Invalid request'}, status=400)
+
+    try:
+        variant = get_object_or_404(ProductVariant, id=variant_id)
+        wishlist_item, created = Wishlist.objects.get_or_create(user=request.user, product_variant=variant)
+
+        if action == 'add':
+            if created:
+                message = 'Product added to wishlist.'
+            else:
+                message = 'Product already in wishlist.'
+        elif action == 'remove':
+            wishlist_item.delete()
+            message = 'Product removed from wishlist.'
+        else:
+            return JsonResponse({'success': False, 'message': 'Invalid action'}, status=400)
+
+        return JsonResponse({'success': True, 'message': message})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+
+
+@login_required
+def check_wishlist(request):
+    variant_id = request.GET.get('variant_id')
+    if not variant_id:
+        return JsonResponse({'success': False, 'message': 'Invalid request'}, status=400)
+
+    try:
+        variant = ProductVariant.objects.get(id=variant_id)
+        in_wishlist = Wishlist.objects.filter(user=request.user, product_variant=variant).exists()
+        return JsonResponse({'success': True, 'in_wishlist': in_wishlist})
+    except ProductVariant.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Variant not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+@login_required
+def download_invoice(request, order_id):
+    order = get_object_or_404(Order, uuid=order_id, user=request.user)
+    items = order.items.all()
+
+    pdf = InvoicePDF()
+    pdf.add_page()
+    pdf.chapter_title(f'Invoice for Order {order.uuid}')
+
+    address = order.address
+    pdf.chapter_body(
+        f'Order Date: {order.created_at.strftime("%Y-%m-%d %H:%M:%S")}\n'
+        f'Address: {address.address_line_1}, {address.address_line_2}, {address.city}, {address.state}, {address.postal_code}, {address.country}\n'
+        f'Order Status: {order.status}\n'
+        f'Return Status: {order.return_status}\n'
+        f'Discount Price: ₹{order.total_price:.2f}\n'
+        f'Payment Method: {order.payment_method}'
+    )
+
+    pdf.add_order_items(items)
+
+    # Store PDF content in a BytesIO stream
+    pdf_output = BytesIO()
+    pdf.output(pdf_output)
+    pdf_output.seek(0)
+
+    # Set response headers
+    response = HttpResponse(pdf_output.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="invoice_{order.uuid}.pdf"'
+    return response

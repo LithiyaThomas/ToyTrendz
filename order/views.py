@@ -18,6 +18,8 @@ from coupon.models import Coupon
 from django.db.models import Sum
 import logging
 from decimal import Decimal
+from django.utils import timezone
+from django.db.models import F
 
 
 @login_required
@@ -57,6 +59,8 @@ def list_orders(request):
 
     return render(request, 'order/order_list.html', context)
 
+
+
 @login_required
 def change_order_status(request, order_uuid, new_status):
     order = get_object_or_404(Order, uuid=order_uuid, user=request.user)
@@ -70,6 +74,8 @@ def change_order_status(request, order_uuid, new_status):
             messages.error(request, "Invalid status.")
 
     return redirect('order_detail', order_uuid=order_uuid)
+
+
 
 @login_required
 def return_order(request, order_uuid):
@@ -86,51 +92,58 @@ def return_order(request, order_uuid):
             messages.error(request, "This order cannot be returned.")
     return redirect('order:order_detail', order_uuid=order.uuid)
 
-logger = logging.getLogger(__name__)
+
+
+
 @login_required
 def process_return(request, order_uuid):
-    logger.info(f"Process return called for order {order_uuid}")
     order = get_object_or_404(Order, uuid=order_uuid)
-    logger.info(f"Order found: {order}")
 
     if request.method == "POST":
         action = request.POST.get('action')
-        logger.info(f"Action: {action}")
 
         if order.return_status == 'Requested':
-            logger.info("Order return status is 'Requested'")
             with transaction.atomic():
                 try:
                     if action == 'approve':
-                        logger.info("Approving return")
+
                         order.return_status = 'Approved'
                         wallet = get_object_or_404(Wallet, user=order.user)
+
+
                         WalletTransaction.handle_order_cancellation(
                             wallet=wallet,
                             order_amount=order.total_price,
                             payment_method=order.payment_method,
                             order=order
                         )
+
+                        # Update stock for each item in the order
+                        for item in order.items.all():
+                            product_variant = item.variant
+                            product_variant.variant_stock += item.quantity
+                            product_variant.save()
+
+
                         order.save()
-                        logger.info("Return approved and refund processed")
                         messages.success(request, "Return approved and refund processed.")
+
                     elif action == 'reject':
-                        logger.info("Rejecting return")
+
                         order.return_status = 'Rejected'
                         order.save()
-                        logger.info("Return request rejected")
                         messages.success(request, "Return request rejected.")
+
                     else:
-                        logger.error(f"Invalid action: {action}")
                         messages.error(request, "Invalid action.")
+
                 except Exception as e:
-                    logger.error(f"An error occurred: {e}")
                     messages.error(request, f"An error occurred: {str(e)}")
+
         else:
-            logger.warning(f"Invalid return status: {order.return_status}")
             messages.error(request, "Invalid return status for processing.")
+
     else:
-        logger.warning("Invalid request method")
         messages.error(request, "Invalid request method.")
 
     return redirect(reverse('admin_order_list'))
@@ -143,20 +156,19 @@ def cancel_order(request, order_uuid):
     if request.method == "POST":
         if order.status in ['Pending', 'Confirmed', 'Shipped']:
             with transaction.atomic():
-                # Restore stock
+                # Update variant stock
                 for item in order.items.all():
                     if item.variant:
                         variant = item.variant
                         variant.variant_stock += item.quantity
                         variant.save()
 
-                # Update order status
+                # Cancel the order
                 order.status = 'Cancelled'
                 order.save()
 
-                # Handle refunds for wallet and online payments
+                # Handle refunds
                 if order.payment_method in ['wallet', 'online_payment']:
-                    # Ensure the wallet exists
                     wallet, created = Wallet.objects.get_or_create(user=request.user)
 
                     WalletTransaction.handle_order_cancellation(
@@ -167,7 +179,7 @@ def cancel_order(request, order_uuid):
                     )
 
                     if order.payment_method == 'online_payment':
-                        # Create a record of the refund
+                        # Record the refund
                         Payment.objects.create(
                             order=order,
                             amount_paid=order.total_price,
@@ -176,29 +188,30 @@ def cancel_order(request, order_uuid):
                         )
 
                 messages.success(request, "Order cancelled successfully.")
-            return redirect('order:list_orders')
+                return redirect('order:list_orders')  # Redirect to a list of orders
         else:
             messages.error(request, "Cannot cancel this order.")
+            return redirect('order:order_detail', order_uuid=order.uuid)  # Redirect to the order detail page
 
+    # If not POST request, redirect to the order detail page
     return redirect('order:order_detail', order_uuid=order.uuid)
-
 
 @login_required
 def proceed_to_payment(request):
-    # Fetch the user's addresses
+
     addresses = Address.objects.filter(user=request.user, is_deleted=False)
 
     try:
-        # Fetch the cart for the logged-in user
+
         cart = Cart.objects.get(user=request.user)
     except Cart.DoesNotExist:
         cart = None
 
     if cart:
-        # Fetch the items in the cart
+
         cart_items = CartItem.objects.filter(cart=cart)
 
-        # Validate stock and item status
+
         for item in cart_items:
             if item.quantity > item.variant.variant_stock:
                 messages.error(request, f"Insufficient stock for {item.product.product_name}.")
@@ -207,20 +220,28 @@ def proceed_to_payment(request):
                 messages.error(request, f"{item.product.product_name} is no longer available.")
                 return redirect('cart:view_cart')
 
-        # Calculate the total price
+
         cart_total = sum(item.get_total_price() for item in cart_items)
     else:
         cart_items = []
         cart_total = 0
 
-    # Define available payment options
+
     payment_options = ['wallet', 'online_payment', 'Cash on Delivery']
+
+    available_coupons = Coupon.objects.filter(
+        is_active=True,
+        start_date__lte=timezone.now(),
+        expiry_date__gt=timezone.now(),
+        usage_count__lt=F('overall_usage_limit')
+    ).values('code', 'offer_percentage', 'start_date', 'expiry_date')
 
     return render(request, 'order/proceed_to_payment.html', {
         'addresses': addresses,
         'cart_items': cart_items,
         'cart_total': cart_total,
-        'payment_options': payment_options
+        'payment_options': payment_options,
+        'coupons': available_coupons,
     })
 
 
@@ -236,10 +257,10 @@ def place_order(request):
 
         try:
             with transaction.atomic():
-                # Get the selected address
+
                 address = get_object_or_404(Address, id=address_id, user=request.user)
 
-                # Create OrderAddress instance
+
                 order_address = OrderAddress.objects.create(
                     user=request.user,
                     full_name=address.full_name,
@@ -267,13 +288,13 @@ def place_order(request):
                         messages.error(request, f"{item.product.product_name} is no longer available.")
                         return redirect('cart:view_cart')
 
-                # Get the cart total from the session or calculate it
+
                 cart_total = request.session.get('cart_total', get_cart_total(request.user))
 
-                # Get the coupon discount from the session
+
                 coupon_discount = request.session.get('coupon_discount', 0)
 
-                # Create the order with the updated total and coupon discount
+
                 order = Order.objects.create(
                     user=request.user,
                     total_price=cart_total,
@@ -293,7 +314,7 @@ def place_order(request):
                         price=item.product.price,
 
                     )
-                # Clear the session data after creating the order
+
                 if 'cart_total' in request.session:
                     del request.session['cart_total']
                 if 'coupon_discount' in request.session:
@@ -317,7 +338,7 @@ def place_order(request):
                     })
 
                 elif payment_method == 'wallet':
-                    # Wallet payment logic
+
                     wallet = get_object_or_404(Wallet, user=request.user)
                     if wallet.balance >= cart_total:
                         wallet.balance -= cart_total
@@ -348,6 +369,10 @@ def place_order(request):
                         return redirect('order:checkout')
 
                 else:  # Cash on Delivery
+                    if cart_total > Decimal('1000'):
+                        messages.error(request, "Cash on Delivery is not available for orders above Rs 1000.")
+                        return redirect('order:checkout')
+
                     order.status = 'Confirmed'
                     order.save()
 
@@ -367,6 +392,7 @@ def place_order(request):
 
     else:
         return redirect('order:checkout')
+
 @csrf_exempt
 def razorpay_callback(request):
     if request.method == "POST":
@@ -415,15 +441,27 @@ def order_failure(request, order_uuid):
     }
     return render(request, 'order/order_failure.html', context)
 
+
 @login_required
 def order_success(request, order_uuid):
     order = get_object_or_404(Order, uuid=order_uuid)
     order_items = OrderItem.objects.filter(order=order)
 
+    # Calculate subtotal
+    subtotal = sum(item.product.offer_price * item.quantity for item in order.items.all())
+
+    # Assuming coupon_discount is a discount applied on the subtotal
+    coupon_discount = order.coupon_discount if order.coupon_discount else 0
+
+    # Calculate total price
+    total_price = subtotal - coupon_discount
+
     context = {
         'order': order,
         'order_items': order_items,
-
+        'subtotal': subtotal,
+        'discount': coupon_discount,
+        'total_price': total_price,
     }
     return render(request, 'order/order_success.html', context)
 
@@ -440,7 +478,7 @@ def add_address(request):
         country = request.POST.get('country')
         is_default = request.POST.get('is_default') == 'on'
 
-        # Create new address
+
         new_address = Address(
             user=request.user,
             full_name=full_name,
@@ -548,15 +586,37 @@ def get_cart_total(user):
         return 0
 
 
+def get_available_coupons(request):
+    available_coupons = Coupon.objects.filter(
+        is_active=True,
+        start_date__lte=timezone.now(),
+        expiry_date__gt=timezone.now(),
+        usage_count__lt=F('overall_usage_limit')
+    ).values('code', 'offer_percentage')
 
+    return JsonResponse({'coupons': list(available_coupons)})
+
+
+@require_POST
+def remove_coupon(request):
+    request.session.pop('cart_total', None)
+    request.session.pop('coupon_discount', None)
+
+    cart_total = get_cart_total(request.user)
+
+    return JsonResponse({
+        'success': True,
+        'message': 'Coupon removed successfully!',
+        'new_total': float(cart_total)
+    })
 
 @login_required
 def my_wallet(request):
     wallet, created = Wallet.objects.get_or_create(user=request.user)
     transactions = WalletTransaction.objects.filter(wallet=wallet).order_by('-timestamp')
 
-    # Paginate transactions
-    paginator = Paginator(transactions, 10)  # Show 10 transactions per page
+
+    paginator = Paginator(transactions, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 

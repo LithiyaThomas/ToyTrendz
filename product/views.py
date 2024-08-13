@@ -12,6 +12,7 @@ import json
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_control
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 
 def is_admin(user):
     return user.is_superuser
@@ -85,11 +86,7 @@ class ProductDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         product = self.object
 
-
-
-
         variants = ProductVariant.objects.filter(product=product).prefetch_related('productvariantimage_set')
-        
 
         variant_data = []
         for variant in variants:
@@ -106,8 +103,6 @@ class ProductDetailView(DetailView):
 
         # Set the first variant as default selected
         context['selected_variant'] = variants.first()
-
-
 
         return context
     
@@ -150,8 +145,8 @@ class ProductVariantUpdateView(UpdateView):
     def get_success_url(self):
         return reverse_lazy('product:product_variants', kwargs={'product_id': self.object.product_id})
 
-# Product Variant DeleteView
 
+# Product Variant DeleteView
 class ProductVariantStatusToggleView(View):
     def get(self, request, *args, **kwargs):
         variant_id = kwargs.get('pk')
@@ -205,3 +200,6 @@ class DemoView(CreateView):
         context['categories'] = Category.objects.all()
         context['brands'] = Brand.objects.all()
         return context
+
+
+

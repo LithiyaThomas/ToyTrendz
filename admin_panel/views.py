@@ -4,12 +4,19 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db import transaction
-from datetime import datetime
-from django.db.models import Sum
+from django.db.models import Sum, OuterRef, Subquery, CharField, Value, F
 from accounts.models import User, Wallet, WalletTransaction
 from order.models import Order, OrderItem, Payment
 from .forms import AdminLoginForm, OrderStatusForm
 from django.http import JsonResponse
+from django.utils import timezone
+from django.conf import settings
+from django.db.models.functions import Coalesce
+from datetime import datetime, timedelta
+from product.models import Product,ProductVariant,ProductVariantImage
+from category.models import Category
+from brand.models import Brand
+
 # Check if user is admin
 def is_admin(user):
     return user.is_authenticated and user.is_admin
@@ -35,12 +42,142 @@ def admin_login(request):
 
     return render(request, 'adminside/admin_login.html', {'form': form})
 
-@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+
+def filter_sales_data(period):
+    today = timezone.localdate()
+
+    if period == 'yearly':
+        start_date = today - timedelta(days=365)
+    elif period == 'monthly':
+        start_date = today - timedelta(days=30)
+    elif period == 'weekly':
+        start_date = today - timedelta(days=7)
+    elif period == 'daily':
+        start_date = today
+    else:
+
+        start_date = today
+
+
+    start_datetime = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
+    end_datetime = timezone.make_aware(datetime.combine(today, datetime.max.time()))
+
+    print(f"Start date for period '{period}': {start_datetime}")
+    print(f"End date for period '{period}': {end_datetime}")
+
+    if period == 'daily':
+
+        sales_data = Order.objects.filter(created_at__date=today).aggregate(total_sales=Sum('total_price'))
+        total_sales = sales_data['total_sales'] or 0
+        sales_dates = [today.strftime('%Y-%m-%d')]
+        sales_totals = [float(total_sales)]
+    else:
+
+        sales_data = Order.objects.filter(created_at__date__gte=start_date).values('created_at__date').annotate(total_sales=Sum('total_price')).order_by('created_at__date')
+        sales_dates = [data['created_at__date'].strftime('%Y-%m-%d') for data in sales_data]
+        sales_totals = [float(data['total_sales']) for data in sales_data]
+
+    print(f"Period: {period}")
+    print(f"Sales Dates: {sales_dates}")
+    print(f"Sales Totals: {sales_totals}")
+
+    return sales_dates, sales_totals
+
+
 @login_required(login_url='admin-login')
 def admin_dashboard(request):
-    if not request.session.get('is_admin'):
-        return redirect('admin-login')
-    return render(request, 'adminside/dashboard.html')
+    period = request.GET.get('period', 'daily')
+
+    sales_dates, sales_totals = filter_sales_data(period)
+
+    total_revenue = sum(sales_totals)
+
+    start_date = timezone.make_aware(datetime.strptime(sales_dates[0], '%Y-%m-%d'))
+    end_date = timezone.make_aware(datetime.strptime(sales_dates[-1], '%Y-%m-%d'))
+    total_orders = Order.objects.filter(created_at__range=(start_date, end_date)).count()
+
+    total_products = Product.objects.count()
+
+    order_statuses = ['Pending', 'Completed', 'Cancelled']
+    order_counts = [
+        Order.objects.filter(created_at__range=(start_date, end_date), status=status).count()
+        for status in order_statuses
+    ]
+
+    context = {
+        'total_revenue': total_revenue,
+        'total_orders': total_orders,
+        'total_products': total_products,
+        'sales_dates': sales_dates,
+        'sales_totals': sales_totals,
+        'order_statuses': order_statuses,
+        'order_counts': order_counts,
+    }
+
+
+    return render(request, 'adminside/dashboard.html', context)
+
+
+
+
+def best_selling(request):
+
+    image_subquery = ProductVariantImage.objects.filter(
+        variant=OuterRef('pk')
+    ).values('image')[:1]
+
+
+    default_image_url = settings.MEDIA_URL + 'photos/productvariant/default_image.jpg'
+
+
+    top_products = ProductVariant.objects.select_related('product').annotate(
+        total_quantity=Sum('orderitem__quantity'),
+        variant_image=Coalesce(
+            Subquery(image_subquery, output_field=CharField()),
+            Value(default_image_url, output_field=CharField())
+        ),
+        offer_price=F('product__offer_price')
+    ).values(
+        'product__product_name',
+        'product__product_category__category_name',
+        'product__product_brand__name',
+        'product__id',
+        'id',
+        'offer_price',
+        'colour_name',
+        'variant_image',
+        'total_quantity'
+    ).order_by('-total_quantity')[:10]
+
+
+    for product in top_products:
+        product['variant_image'] = settings.MEDIA_URL + product['variant_image']
+
+
+    top_categories = Category.objects.annotate(
+        total_quantity=Coalesce(Sum('product__productvariant__orderitem__quantity'), Value(0))
+    ).exclude(total_quantity=0).order_by('-total_quantity')[:10]
+
+
+    for category in top_categories:
+        if category.cat_image:
+            category.cat_image_url = category.cat_image.url.replace(settings.MEDIA_URL, '')
+        else:
+            category.cat_image_url = 'photos/categories/default_category_image.jpg'
+
+
+    top_brands = Brand.objects.annotate(
+        total_quantity=Coalesce(Sum('product__productvariant__orderitem__quantity'), Value(0))
+    ).exclude(total_quantity=0).order_by('-total_quantity')[:10]
+
+
+    context = {
+        'top_products': top_products,
+        'top_categories': top_categories,
+        'top_brands': top_brands,
+        'MEDIA_URL': settings.MEDIA_URL,
+    }
+    return render(request, 'adminside/best_selling.html', context)
 
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 @login_required(login_url='admin-login')
@@ -110,18 +247,18 @@ def cancel_order(request, pk):
     if request.method == 'POST':
         if order.status in ['Pending', 'Confirmed', 'Shipped']:
             with transaction.atomic():
-                # Restore stock
+
                 for item in order.items.all():
                     if item.variant:
                         variant = item.variant
                         variant.variant_stock += item.quantity
                         variant.save()
 
-                # Update order status
+
                 order.status = 'Cancelled'
                 order.save()
 
-                # Handle refunds for wallet and online payments
+
                 if order.payment_method in ['wallet', 'online_payment']:
                     wallet, created = Wallet.objects.get_or_create(user=order.user)
 

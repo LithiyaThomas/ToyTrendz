@@ -18,7 +18,7 @@ import json
 def add_to_cart(request):
     if request.method == "POST":
         try:
-            # Check if the request is JSON or form data
+
             if request.content_type == 'application/json':
                 data = json.loads(request.body)
             else:
@@ -99,18 +99,18 @@ def view_cart(request):
             item.total_price = item.quantity * item.variant.product.offer_price
             subtotal += item.total_price
 
-        # Apply coupon if exists
+
         discount_amount, total = apply_coupon(cart, subtotal)
 
     except Cart.DoesNotExist:
-        # Create a new cart if it doesn't exist
+
         cart = Cart.objects.create(user=request.user)
         cart_items = []
         subtotal = 0
         discount_amount = 0
         total = 0
 
-    # Check if the cart is empty
+
     is_cart_empty = len(cart_items) == 0
 
     context = {
@@ -137,7 +137,7 @@ def remove_cart_item(request, item_id):
             cart.discount_amount, cart.discounted_price = apply_coupon(cart, total_price)
             cart.save()
 
-            # Get updated cart information
+
             cart_items = CartItem.objects.filter(cart=cart)
             total_items = cart_items.count()
 
@@ -186,15 +186,15 @@ def update_quantity(request, item_id):
         cart_item.quantity = quantity
         cart_item.save()
 
-        # Calculate item total and cart total
+
         item_price = cart_item.variant.product.offer_price
         item_total = item_price * quantity
 
-        # Get all cart items for the user
+
         user_cart_items = CartItem.objects.filter(cart__user=request.user)
 
-        # Calculate cart total and total items
-        cart_total = sum(item.variant.product.price * item.quantity for item in user_cart_items)
+
+        cart_total = sum(item.variant.product.offer_price * item.quantity for item in user_cart_items)
         total_items = user_cart_items.count()
 
         return JsonResponse({

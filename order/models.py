@@ -80,8 +80,7 @@ class OrderItem(models.Model):
     def __str__(self):
         return f"{self.quantity} x {self.product.product_name} in Order {self.order.uuid}"
 
-    def __str__(self):
-        return f"{self.quantity} x {self.product.product_name} in Order {self.order.uuid}"
+
 
 # Define the Payment model
 class Payment(models.Model):

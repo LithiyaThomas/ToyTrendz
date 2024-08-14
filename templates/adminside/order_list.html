@@ -23,6 +23,7 @@
                         <th>User</th>
                         <th>Total Price</th>
                         <th>Status</th>
+                        <th>Return  Status</th>
                         <th>Payment Status</th>
                         <th>Actions</th>
                         <th>Details</th>
@@ -45,6 +46,16 @@
                                             {% elif order.status == 'Delivered' %}#36b9cc
                                             {% else %}#858796{% endif %};">
                                         {{ order.get_status_display }}
+                                    </span>
+                                </td>
+                                   <td>
+                                    <span class="badge badge-status-{{ order.return_status|lower }}"
+                                          style="background-color:
+                                            {% if order.return_status == 'Not Requested' %}#858796
+                                            {% elif order.return_status == 'Requested' %}#f6c23e
+                                            {% elif order.return_status == 'Approved' %}#1cc88a
+                                            {% else %}#e74a3b{% endif %};">
+                                        {{ order.return_status }}
                                     </span>
                                 </td>
                                 <td>
@@ -115,6 +126,7 @@
                                         {{ order.get_status_display }}
                                     </span>
                                 </td>
+
                                 <td>
                                     <span class="badge badge-payment-{{ order.payment_status|lower }}"
                                           style="background-color:
@@ -134,14 +146,14 @@
                                     {% csrf_token %}
                                     <input type="hidden" name="action" value="approve">
                                     <button type="submit" class="btn btn-success btn-sm action-btn">Approve</button>
-                                </form>
-                                {% if order.status != 'Cancelled' %}
+                                    </form>
+                                    {% if order.status != 'Cancelled' %}
                                     <form action="{% url 'order:process_return' order.uuid %}" method="post" class="d-inline ml-2">
                                         {% csrf_token %}
                                         <input type="hidden" name="action" value="reject">
                                         <button type="submit" class="btn btn-danger btn-sm action-btn">Reject</button>
                                     </form>
-                                {% endif %}
+                                    {% endif %}
                                 </td>
                             </tr>
                         {% endif %}

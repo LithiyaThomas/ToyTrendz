@@ -17,7 +17,7 @@ urlpatterns = [
     path('order_failure/<uuid:order_uuid>/', views.order_failure, name='order_failure'),
     path('razorpay/callback/', views.razorpay_callback, name='razorpay_callback'),
     path('apply_coupon/', views.apply_coupon, name='apply_coupon'),
-    path('get-available-coupons/', views.get_available_coupons, name='get_available_coupons'),
+    path('available-coupons/', views.get_available_coupons, name='available_coupons'),
     path('remove-coupon/', views.remove_coupon, name='remove_coupon'),
     path('my-wallet/', views.my_wallet, name='my_wallet'),
 

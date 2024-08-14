@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <!-- SweetAlert2 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -140,23 +139,22 @@
                                 <span class="text-success">Free</span>
                             </div>
                             <hr>
-                                <!-- Trigger Button for Coupon Modal -->
-<button type="button" class="btn btn-info" data-toggle="modal" data-target="#couponModal">
-    Available Coupons
-</button>
+                            <!-- Trigger Button for Coupon Modal -->
+                            <button type="button" class="btn btn-info" data-toggle="modal" data-target="#couponModal">
+                                Available Coupons
+                            </button>
                             <!-- Coupon Code Section -->
-<div class="coupon-section mb-3">
-    <h5>Apply Coupon</h5>
-    <div class="input-group">
-        <input type="text" id="coupon_code" name="coupon_code" class="form-control" placeholder="Enter coupon code">
-        <div class="input-group-append">
-            <button type="button" id="apply-coupon-btn" class="btn btn-primary">Apply</button>
-        </div>
-    </div>
-    <button type="button" id="remove-coupon-btn" class="btn btn-danger mt-2">Remove Coupon</button>
-    <div id="coupon_message" class="mt-2"></div>
-</div>
-
+                            <div class="coupon-section mb-3">
+                                <h5>Apply Coupon</h5>
+                                <div class="input-group">
+                                    <input type="text" id="coupon_code" name="coupon_code" class="form-control" placeholder="Enter coupon code">
+                                    <div class="input-group-append">
+                                        <button type="button" id="apply-coupon-btn" class="btn btn-primary">Apply</button>
+                                    </div>
+                                </div>
+                                <button type="button" id="remove-coupon-btn" class="btn btn-danger mt-2">Remove Coupon</button>
+                                <div id="coupon_message" class="mt-2"></div>
+                            </div>
 
                             <!-- Discount section (initially hidden) -->
                             <div id="discount-section" style="display: none;">
@@ -245,107 +243,130 @@
         </div>
     </div>
 
-
-
-<!-- Coupon Modal Structure -->
-<div class="modal fade" id="couponModal" tabindex="-1" role="dialog" aria-labelledby="couponModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="couponModalLabel">Available Coupons</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                {% if coupons %}
-                    <ul class="list-group">
-                        {% for coupon in coupons %}
-                            <li class="list-group-item">
-                                <strong>Code:</strong> {{ coupon.code }}<br>
-                                <strong>Discount:</strong> {{ coupon.offer_percentage }}%<br>
-                                <strong>Valid From:</strong> {{ coupon.start_date|date:"M d, Y" }}<br>
-                                <strong>Valid Until:</strong> {{ coupon.expiry_date|date:"M d, Y" }}
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p>No coupons available.</p>
-                {% endif %}
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+    <!-- Coupon Modal Structure -->
+    <div class="modal fade" id="couponModal" tabindex="-1" role="dialog" aria-labelledby="couponModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="couponModalLabel">Available Coupons</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    {% if coupons %}
+                        <ul class="list-group">
+                            {% for coupon in coupons %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Code:</strong> {{ coupon.code }}<br>
+                                        <strong>Discount:</strong> {{ coupon.offer_percentage }}%<br>
+                                        <strong>Valid From:</strong> {{ coupon.start_date|date:"M d, Y" }}<br>
+                                        <strong>Valid Until:</strong> {{ coupon.expiry_date|date:"M d, Y" }}
+                                    </div>
+                                    <button class="btn btn-primary apply-coupon-btn" data-coupon-code="{{ coupon.code }}">Apply</button>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>No coupons available.</p>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
     <!-- jQuery and Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.1.3/css/bootstrap.min.css">
-
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
-        $(document).ready(function() {
-    $('#apply-coupon-btn').click(function() {
-        const couponCode = $('#coupon_code').val();
-        const csrfToken = $('input[name="csrfmiddlewaretoken"]').val();
+ $(document).ready(function() {
+        // Function to show the coupon code in the input box
+        function showCouponCode(code) {
+            $('#coupon_code').val(code);
+        }
 
-        $.ajax({
-            url: '{% url "order:apply_coupon" %}',
-            type: 'POST',
-            data: {
-                'coupon_code': couponCode,
-                'csrfmiddlewaretoken': csrfToken
-            },
-            success: function(response) {
-                if (response.success) {
-                    $('#coupon_message').text(response.message).removeClass('text-danger').addClass('text-success');
-                    $('#discount-section').show();
-                    $('#discount-amount').text('$' + response.discount.toFixed(2));
-                    $('#order-total').text('$' + response.new_total.toFixed(2));
-
-                    // Log the discount and new total for debugging
-                    console.log('Discount:', response.discount);
-                    console.log('New Total:', response.new_total);
-                } else {
-                    $('#coupon_message').text(response.message).removeClass('text-success').addClass('text-danger');
-                    $('#discount-section').hide();
-                }
-            },
-            error: function(xhr, status, error) {
-                $('#coupon_message').text('An error occurred. Please try again.').removeClass('text-success').addClass('text-danger');
-                console.error('Error:', error);
-            }
+        // Apply coupon button click event (inside the modal)
+        $(document).on('click', '.apply-coupon-btn', function() {
+            const couponCode = $(this).data('coupon-code');
+            showCouponCode(couponCode);
+            $('#couponModal').modal('hide');
         });
-    });
 
-    $('#remove-coupon-btn').click(function() {
-        const csrfToken = $('input[name="csrfmiddlewaretoken"]').val();
+        // Apply coupon button click event (main button)
+        $('#apply-coupon-btn').click(function() {
+            const couponCode = $('#coupon_code').val();
+            const csrfToken = $('input[name="csrfmiddlewaretoken"]').val();
 
-        $.ajax({
-            url: '{% url "order:remove_coupon" %}',
-            type: 'POST',
-            data: {
-                'csrfmiddlewaretoken': csrfToken
-            },
-            success: function(response) {
-                if (response.success) {
-                    $('#coupon_message').text(response.message).removeClass('text-danger').addClass('text-success');
-                    $('#discount-section').hide();
-                    $('#order-total').text('$' + response.new_total.toFixed(2));
+            $.ajax({
+                url: '{% url "order:apply_coupon" %}',
+                type: 'POST',
+                data: {
+                    'coupon_code': couponCode,
+                    'csrfmiddlewaretoken': csrfToken
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $('#coupon_message').text(response.message).removeClass('text-danger').addClass('text-success');
+                        $('#discount-section').show();
+                        $('#discount-amount').text('$' + response.discount.toFixed(2));
+                        $('#order-total').text('$' + response.new_total.toFixed(2));
 
-                    // Log the new total for debugging
-                    console.log('New Total:', response.new_total);
-                } else {
-                    $('#coupon_message').text(response.message).removeClass('text-success').addClass('text-danger');
+                        console.log('Discount:', response.discount);
+                        console.log('New Total:', response.new_total);
+                    } else {
+                        $('#coupon_message').text(response.message).removeClass('text-success').addClass('text-danger');
+                        $('#discount-section').hide();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#coupon_message').text('An error occurred. Please try again.').removeClass('text-success').addClass('text-danger');
+                    console.error('Error:', error);
                 }
-            },
-            error: function(xhr, status, error) {
-                $('#coupon_message').text('An error occurred. Please try again.').removeClass('text-success').addClass('text-danger');
-                console.error('Error:', error);
-            }
+            });
+        });
+
+        // Remove coupon button click event
+        $('#remove-coupon-btn').click(function() {
+            const csrfToken = $('input[name="csrfmiddlewaretoken"]').val();
+
+            $.ajax({
+                url: '{% url "order:remove_coupon" %}',
+                type: 'POST',
+                data: {
+                    'csrfmiddlewaretoken': csrfToken
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $('#coupon_message').text(response.message).removeClass('text-danger').addClass('text-success');
+                        $('#discount-section').hide();
+                        $('#order-total').text('$' + response.new_total.toFixed(2));
+                        $('#coupon_code').val(''); // Clear the coupon code input
+
+                        console.log('New Total:', response.new_total);
+                    } else {
+                        $('#coupon_message').text(response.message).removeClass('text-success').addClass('text-danger');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#coupon_message').text('An error occurred. Please try again.').removeClass('text-success').addClass('text-danger');
+                    console.error('Error:', error);
+                }
+            });
+        });
+
+        // Troubleshooting the modal
+        $('#couponModal').on('show.bs.modal', function (e) {
+            console.log('Modal is about to show');
+        });
+
+        $('.btn-info').click(function() {
+            console.log('Button clicked');
+            $('#couponModal').modal('show');
         });
     });
 
@@ -371,9 +392,7 @@
             });
         {% endif %}
     });
-});
-
- </script>
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>

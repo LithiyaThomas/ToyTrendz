@@ -203,7 +203,9 @@
     <div class="d-flex">
         <div class="sidebar">
             <h2 class="text-center">COZY CRIBS</h2>
-         <a href="{% url 'user_data' %}" class="list-group-item list-group-item-action"><i class="fas fa-users"></i> Users</a>
+<a href="{% url 'admin-dashboard' %}" class="list-group-item list-group-item-action"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+
+            <a href="{% url 'user_data' %}" class="list-group-item list-group-item-action"><i class="fas fa-users"></i> Users</a>
 <a href="{% url 'category:category_list' %}" class="list-group-item list-group-item-action"><i class="fas fa-folder"></i> Categories</a>
 <a href="{% url 'brand:brand_list' %}" class="list-group-item list-group-item-action"><i class="fas fa-tags"></i> Brands</a>
 <a href="{% url 'product:product_list' %}" class="list-group-item list-group-item-action"><i class="fas fa-box"></i> Products</a>

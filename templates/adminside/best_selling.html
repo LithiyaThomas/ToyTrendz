@@ -1,0 +1,80 @@
+{% extends 'adminside/base.html' %}
+
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Best Selling Products, Categories, and Brands</h1>
+
+    <!-- Top Products Section -->
+    <section>
+        <h2>Top Products</h2>
+        <div class="row">
+            {% for product in top_products %}
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <img src="{{ product.variant_image }}" class="card-img-top" alt="{{ product.product__product_name }}">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ product.product__product_name }}</h5>
+                        <p class="card-text">Price: ${{ product.offer_price }}</p>
+                        <p class="card-text">Color: {{ product.colour_name }}</p>
+                        <p class="card-text">Quantity Sold: {{ product.total_quantity }}</p>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p>No top products found.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+   <!-- Top Categories Section -->
+<section class="mt-4">
+    <h2>Top Categories</h2>
+    <div class="row">
+        {% for category in top_categories %}
+        <div class="col-md-3 mb-4">
+            <div class="card">
+                <!-- Debug output -->
+
+                <!-- End debug output -->
+
+                {% if category.cat_image %}
+                <img src="{{ MEDIA_URL }}{{ category.cat_image_url }}" class="card-img-top" alt="{{ category.category_name }}">
+                {% else %}
+                <img src="{% static 'default_category_image.jpg' %}" class="card-img-top" alt="Default Image">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ category.category_name }}</h5>
+                    <p class="card-text">Quantity Sold: {{ category.total_quantity }}</p>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p>No top categories found.</p>
+        {% endfor %}
+    </div>
+</section>
+
+
+    <!-- Top Brands Section -->
+    <section class="mt-4">
+        <h2>Top Brands</h2>
+        <div class="row">
+            {% for brand in top_brands %}
+            <div class="col-md-3 mb-4">
+                <div class="card">
+
+                    <div class="card-body">
+                        <h5 class="card-title">{{ brand.name }}</h5>
+                        <p class="card-text">Quantity Sold: {{ brand.total_quantity }}</p>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p>No top brands found.</p>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

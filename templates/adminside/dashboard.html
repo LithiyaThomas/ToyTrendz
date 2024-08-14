@@ -3,94 +3,138 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-    <div class="container-fluid">
-                <div class="row">
-                    <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card border-left-primary shadow h-100 py-2">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="card-title">Revenue</div>
-                                        <div class="card-text">$13,456.5</div>
-                                        <small>Shipping fees are not included</small>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+<div class="container-fluid">
+<!-- Filter options -->
+<div class="row mb-4">
+    <div class="col">
+        <select id="period-select" class="form-control">
+            <option value="daily" {% if period == 'daily' %}selected{% endif %}>Daily</option>
+            <option value="weekly" {% if period == 'weekly' %}selected{% endif %}>Weekly</option>
+            <option value="monthly" {% if period == 'monthly' %}selected{% endif %}>Monthly</option>
+            <option value="yearly" {% if period == 'yearly' %}selected{% endif %}>Yearly</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <button id="filter-button" class="btn btn-primary">Filter</button>
+    </div>
+</div>
+
+<!-- Dashboard Cards -->
+<div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="card-title">Revenue</div>
+                        <div class="card-text" id="revenue">${{ total_revenue|floatformat:2 }}</div>
+                        <small>Shipping fees are not included</small>
                     </div>
-                    <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card border-left-success shadow h-100 py-2">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="card-title">Orders</div>
-                                        <div class="card-text">53,668</div>
-                                        <small>Excluding orders in transit</small>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card border-left-info shadow h-100 py-2">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="card-title">Products</div>
-                                        <div class="card-text">9,856</div>
-                                        <small>In 19 Categories</small>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card border-left-warning shadow h-100 py-2">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="card-title">Monthly Earning</div>
-                                        <div class="card-text">$6,982</div>
-                                        <small>Based on your local time</small>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="fas fa-calendar fa-2x text-gray-300"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-xl-6 col-lg-7">
-                        <div class="card shadow mb-4">
-                            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                <h6 class="m-0 font-weight-bold text-primary">Sale Statistics</h6>
-                            </div>
-                            <div class="card-body">
-                                <!-- Include your chart here -->
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-xl-6 col-lg-5">
-                        <div class="card shadow mb-4">
-                            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                <h6 class="m-0 font-weight-bold text-primary">Revenue Based on Area</h6>
-                            </div>
-                            <div class="card-body">
-                                <!-- Include your chart here -->
-                            </div>
-                        </div>
+                    <div class="col-auto">
+                        <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="card-title">Orders</div>
+                        <div class="card-text" id="orders">{{ total_orders }}</div>
+                        <small>Excluding orders in transit</small>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="card-title">Products</div>
+                        <div class="card-text" id="products">{{ total_products }}</div>
+                        <small>In 0 Categories</small>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-box fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="card-title">Monthly Earning</div>
+                        <div class="card-text" id="monthly-earning">${{ monthly_earning|floatformat:2 }}</div>
+                        <small>Based on your local time</small>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Charts -->
+    <div class="row">
+        <div class="col-xl-6 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Sale Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="sales-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Orders by Status</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="orders-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Best Selling Products Link -->
+    <div class="row">
+        <div class="col">
+            <a href="{% url 'admin-best-selling' %}" class="btn btn-info mt-4">View Best Selling Products</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- JavaScript for handling filter -->
+<script>
+    document.getElementById('filter-button').addEventListener('click', function() {
+        var period = document.getElementById('period-select').value;
+        // Make an AJAX request to update the dashboard based on the selected period
+        fetch(`/sales-data/?period=${period}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('revenue').innerText = `$${data.total_revenue.toFixed(2)}`;
+                document.getElementById('orders').innerText = data.total_orders;
+                document.getElementById('products').innerText = data.total_products;
+                document.getElementById('monthly-earning').innerText = `$${data.monthly_earning.toFixed(2)}`;
+            })
+            .catch(error => console.error('Error:', error));
+    });
+</script>
 {% endblock %}

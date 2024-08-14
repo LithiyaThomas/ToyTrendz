@@ -322,6 +322,26 @@
         });
     });
 </script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Select all return order buttons within forms
+        const returnButtons = document.querySelectorAll('form button[type="submit"]');
+
+        returnButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const form = this.closest('form');
+
+                // Hide the button to make it disappear
+                this.style.display = 'none';
+
+                // Submit the form
+                form.submit();
+            });
+        });
+    });
+</script>
+
+
 
 
    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

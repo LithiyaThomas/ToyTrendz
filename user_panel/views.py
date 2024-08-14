@@ -17,12 +17,16 @@ from accounts.models import Address
 from category.models import Category
 from cart.models import Wishlist
 from offer.models import CategoryOffer
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from io import BytesIO
-from django.http import HttpResponse
+from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
-from order.models import Order
-from . import InvoicePDF
+from order.models import Order,OrderItem
+
 
 User = get_user_model()
 
@@ -313,34 +317,108 @@ def check_wishlist(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
-
 @login_required
 def download_invoice(request, order_id):
-    order = get_object_or_404(Order, uuid=order_id, user=request.user)
-    items = order.items.all()
+    try:
 
-    pdf = InvoicePDF()
-    pdf.add_page()
-    pdf.chapter_title(f'Invoice for Order {order.uuid}')
+        order_main = get_object_or_404(Order, uuid=order_id)
+        order_sub = OrderItem.objects.filter(order=order_main)
 
-    address = order.address
-    pdf.chapter_body(
-        f'Order Date: {order.created_at.strftime("%Y-%m-%d %H:%M:%S")}\n'
-        f'Address: {address.address_line_1}, {address.address_line_2}, {address.city}, {address.state}, {address.postal_code}, {address.country}\n'
-        f'Order Status: {order.status}\n'
-        f'Return Status: {order.return_status}\n'
-        f'Discount Price: ₹{order.total_price:.2f}\n'
-        f'Payment Method: {order.payment_method}'
-    )
 
-    pdf.add_order_items(items)
+        buffer = BytesIO()
 
-    # Store PDF content in a BytesIO stream
-    pdf_output = BytesIO()
-    pdf.output(pdf_output)
-    pdf_output.seek(0)
+        try:
 
-    # Set response headers
-    response = HttpResponse(pdf_output.getvalue(), content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="invoice_{order.uuid}.pdf"'
-    return response
+            doc = SimpleDocTemplate(buffer, pagesize=letter)
+            elements = []
+
+
+            styles = getSampleStyleSheet()
+            title_style = ParagraphStyle(
+                name='TitleStyle',
+                fontName='Helvetica-Bold',
+                fontSize=16,
+                spaceAfter=12,
+                alignment=1,
+                textColor=colors.HexColor('#00796b')
+            )
+            normal_style = ParagraphStyle(
+                name='NormalStyle',
+                fontName='Helvetica',
+                fontSize=12,
+                spaceAfter=6,
+                alignment=0,
+                textColor=colors.black
+            )
+            heading_style = ParagraphStyle(
+                name='HeadingStyle',
+                fontName='Helvetica-Bold',
+                fontSize=14,
+                spaceAfter=6,
+                alignment=0,
+                textColor=colors.HexColor('#004d40')
+            )
+
+
+            elements.append(Paragraph("COZY CRIBS", title_style))
+            elements.append(Paragraph("Invoice", heading_style))
+            elements.append(Spacer(1, 12))
+
+
+            elements.append(Paragraph(f"Order Number: {order_main.uuid}", normal_style))
+            elements.append(Paragraph(f"Order Date: {order_main.created_at.strftime('%Y-%m-%d')}", normal_style))
+            elements.append(Paragraph(f"Customer Name: {order_main.address.full_name}", normal_style))
+            elements.append(Paragraph(f"Email: {order_main.user.email}", normal_style))
+            elements.append(Paragraph(f"Phone: {order_main.address.phone_number}", normal_style))
+            elements.append(Paragraph(
+                f"Address: {order_main.address.address_line_1}, {order_main.address.address_line_2}, {order_main.address.city}, {order_main.address.state}, {order_main.address.postal_code}, {order_main.address.country}",
+                normal_style))
+            elements.append(Spacer(1, 12))
+
+
+            data = [['Product', 'Quantity', 'Unit Price', 'Total Price']]
+            for item in order_sub:
+                data.append([
+                    item.product.product_name,
+                    str(item.quantity),
+                    f"{item.product.offer_price:.2f}",
+                    f"{item.get_subtotal():.2f}"
+                ])
+
+
+            data.append(['', '', 'Subtotal:', f"{order_main.total_price:.2f}"])
+            data.append(['', '', 'Discount:', f"{order_main.coupon_discount:.2f}"])
+            data.append(['', '', 'Shipping:', 'Free'])
+            data.append(['', '', 'Total:', f"{order_main.total_price - order_main.coupon_discount:.2f}"])
+
+
+            table = Table(data)
+            table_style = TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#004d40')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.whitesmoke),
+                ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+                ('ALIGN', (0, -1), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+                ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+                ('BOX', (0, 0), (-1, -1), 1, colors.grey)
+            ])
+            table.setStyle(table_style)
+            elements.append(table)
+
+
+            doc.build(elements)
+        except Exception as e:
+            return HttpResponse(f'Error generating PDF content: {str(e)}', status=500)
+
+
+        buffer.seek(0)
+
+        return FileResponse(buffer, as_attachment=True, filename=f'invoice_{order_id}.pdf')
+
+    except Exception as e:
+        return HttpResponse(f'Error generating PDF: {str(e)}', status=500)

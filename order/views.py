@@ -83,7 +83,6 @@ def return_order(request, order_uuid):
     if request.method == "POST":
         if order.status == 'Delivered' and order.return_status == 'Not Requested':
             with transaction.atomic():
-                # Update order status
                 order.return_status = 'Requested'
                 order.save()
 
@@ -447,13 +446,13 @@ def order_success(request, order_uuid):
     order = get_object_or_404(Order, uuid=order_uuid)
     order_items = OrderItem.objects.filter(order=order)
 
-    # Calculate subtotal
+
     subtotal = sum(item.product.offer_price * item.quantity for item in order.items.all())
 
-    # Assuming coupon_discount is a discount applied on the subtotal
+
     coupon_discount = order.coupon_discount if order.coupon_discount else 0
 
-    # Calculate total price
+
     total_price = subtotal - coupon_discount
 
     context = {

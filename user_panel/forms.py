@@ -23,7 +23,7 @@ class SimpleUserChangeForm(forms.ModelForm):
         for field in self.fields:
             self.fields[field].widget.attrs.update({'class': 'form-control'})
 
-        # Make the email field read-only
+
         self.fields['email'].widget.attrs.update({'readonly': 'readonly'})
         self.fields['email'].help_text = None
 
@@ -39,7 +39,7 @@ class SimpleUserChangeForm(forms.ModelForm):
         phone = self.cleaned_data.get('phone')
         if phone:
             self.phone_validator(phone)
-            # Check if phone number is not all zeros
+
             if phone.strip('0') == '':
                 raise ValidationError(_('Phone number cannot be all zeros.'))
         return phone
@@ -47,13 +47,13 @@ class SimpleUserChangeForm(forms.ModelForm):
     def clean_username(self):
         username = self.cleaned_data.get('username')
         if username:
-            # Check if username contains underscores
+
             if '_' in username:
                 raise ValidationError(_('Username cannot contain underscores.'))
         return username
 
     def clean_email(self):
-        # Ensure email cannot be changed
+
         if self.instance and self.instance.pk:
             original_email = User.objects.get(pk=self.instance.pk).email
             current_email = self.cleaned_data.get('email')

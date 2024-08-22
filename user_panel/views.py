@@ -29,7 +29,6 @@ from order.models import Order,OrderItem
 
 
 User = get_user_model()
-
 class UserPanelProductListView(ListView):
     model = Product
     template_name = 'userside/product_list.html'
@@ -110,10 +109,8 @@ class ProductDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         product = self.object
 
-
+        # Calculate average rating
         ratings = Rating.objects.filter(product=product)
-
-
         if ratings.exists():
             average_rating = ratings.aggregate(Avg('rating'))['rating__avg']
             product.average_rating = round(average_rating, 2)
@@ -123,28 +120,35 @@ class ProductDetailView(DetailView):
         # Fetch thumbnail image if available
         context['thumbnail_image'] = product.thumbnail.url if product.thumbnail else None
 
+        show_out_of_stock = self.request.GET.get('show_out_of_stock', 'false') == 'true'
 
-        context['variant_images'] = ProductVariantImage.objects.filter(variant__product=product)
-
-
+        # Fetch variants based on stock availability
         variants = ProductVariant.objects.filter(product=product)
+        if not show_out_of_stock:
+            variants = variants.filter(variant_stock__gt=0)
+
         context['variants'] = variants
+        context['variant_images'] = ProductVariantImage.objects.filter(variant__in=variants)
 
-
+        # Select the first variant by default
         context['selected_variant'] = variants.first()
-
-
         if context['selected_variant']:
             context['selected_variant_images'] = ProductVariantImage.objects.filter(variant=context['selected_variant'])
+
+        # Handle user rating
+        user_rating = None
+        if self.request.user.is_authenticated:
+            user_rating = Rating.objects.filter(product=product, user=self.request.user).first()
+        context['user_rating'] = user_rating
 
         context['ratings'] = ratings
         context['rating_form'] = RatingForm(initial={'product_id': product.id})
         context['rating_range'] = range(1, 6)
 
-
+        # Fetch related products
         context['related_products'] = Product.objects.filter(product_category=product.product_category).exclude(
             id=product.id)[:4]
-
+        context['show_out_of_stock'] = show_out_of_stock
         return context
 
     def post(self, request, *args, **kwargs):
@@ -157,9 +161,6 @@ class ProductDetailView(DetailView):
             rating.save()
 
         return self.render_to_response(self.get_context_data(form=form))
-
-
-
 
 class AddRatingView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):

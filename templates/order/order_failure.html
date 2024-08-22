@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,17 +6,79 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Failure</title>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style>
+              .bg-hopscotch { background-color: #ff69b4; }
+        .btn-hopscotch { background-color: #ff69b4; border-color: #ff69b4; }
+        .btn-hopscotch:hover { background-color: #ff4da6; border-color: #ff4da6; }
+        header {
+    background-color: #ff69b4;
+    padding: 10px 0;
+}
+/* Removes underline from links */
+.no-underline {
+    text-decoration: none;
+    color: inherit; /* Keep the text color same as surrounding text */
+}
+
+/* Removes underline on hover */
+.no-underline:hover {
+    text-decoration: none;
+    color: inherit; /* Keep the text color same as surrounding text */
+}
+header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 28px;
+    color: white;
+}
+
+header .icons {
+    display: flex;
+    align-items: center;
+}
+
+header .icon {
+    color: white;
+    font-size: 20px;
+    margin-left: 20px;
+    text-decoration: none;
+}
+
+header .icon:hover {
+    color: #f0f0f0;
+}
+
+    </style>
 </head>
 <body>
-    <header>
-        <nav>
-            <ul>
-                <li><a href="{% url 'home' %}">Home</a></li>
-                <li><a href="{% url 'user_panel:order_history' %}">Order History</a></li>
-                <li><a href="{% url 'user_login' %}">Login</a></li>
-            </ul>
-        </nav>
-    </header>
+   <header>
+    <div class="container">
+        <a href="{% url 'home' %}" class="no-underline">
+            <h1 class="heading">COZY CRIBS</h1>
+        </a>
+
+        <div class="icons">
+            <a href="{% url 'user_panel:wishlist' %}" class="icon no-underline"><i class="fas fa-heart"></i></a>
+            <a href="{% url 'cart:view_cart' %}" class="icon no-underline"><i class="fas fa-shopping-bag"></i></a>
+
+            {% if not user.is_authenticated %}
+                <a href="{% url 'user_login' %}" class="icon no-underline"><i class="fas fa-user"></i></a>
+            {% else %}
+                <a href="{% url 'user_logout' %}" class="icon no-underline"><i class="fas fa-sign-out-alt"></i></a>
+                <a href="{% url 'user_panel:user_profile' %}" class="icon no-underline"><i class="fas fa-user-circle"></i></a>
+            {% endif %}
+        </div>
+    </div>
+</header>
+
 
     <main>
         <section class="order-failure">

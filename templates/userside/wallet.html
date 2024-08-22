@@ -12,6 +12,17 @@
         .text-custom-pink { color: #ed54a4 !important; }
         .btn-outline-custom-pink { color: #ed54a4; border-color: #ed54a4; }
         .btn-outline-custom-pink:hover { background-color: #ed54a4; color: white; }
+        /* Removes underline from links */
+.no-underline {
+    text-decoration: none;
+    color: inherit; /* Keep the text color same as surrounding text */
+}
+
+/* Removes underline on hover */
+.no-underline:hover {
+    text-decoration: none;
+    color: inherit; /* Keep the text color same as surrounding text */
+}
         header {
             background-color: #ff69b4;
             padding: 10px 0;
@@ -46,20 +57,24 @@
 </head>
 <body>
  <header>
-        <div class="container">
-            <h1>COZY CRIBS</h1>
-            <div class="icons">
-                <a href="{% url 'user_panel:wishlist' %}" class="icon"><i class="fas fa-heart"></i></a>
-                <a href="{% url 'cart:view_cart' %}" class="icon"><i class="fas fa-shopping-bag"></i></a>
-                {% if not user.is_authenticated %}
-                    <a href="{% url 'user_login' %}" class="icon"><i class="fas fa-user"></i></a>
-                {% else %}
-                    <a href="{% url 'user_logout' %}" class="icon"><i class="fas fa-sign-out-alt"></i></a>
-                    <a href="{% url 'user_panel:user_profile' %}" class="icon"><i class="fas fa-user-circle"></i></a>
-                {% endif %}
-            </div>
+    <div class="container">
+        <a href="{% url 'home' %}" class="no-underline">
+            <h1 class="heading">COZY CRIBS</h1>
+        </a>
+
+        <div class="icons">
+            <a href="{% url 'user_panel:wishlist' %}" class="icon no-underline"><i class="fas fa-heart"></i></a>
+            <a href="{% url 'cart:view_cart' %}" class="icon no-underline"><i class="fas fa-shopping-bag"></i></a>
+
+            {% if not user.is_authenticated %}
+                <a href="{% url 'user_login' %}" class="icon no-underline"><i class="fas fa-user"></i></a>
+            {% else %}
+                <a href="{% url 'user_logout' %}" class="icon no-underline"><i class="fas fa-sign-out-alt"></i></a>
+                <a href="{% url 'user_panel:user_profile' %}" class="icon no-underline"><i class="fas fa-user-circle"></i></a>
+            {% endif %}
         </div>
-    </header>
+    </div>
+</header>
     <div class="card h-100 border-0 shadow">
         <div class="card-body">
             <h2 class="card-title text-custom-pink mb-4">My Wallet</h2>
@@ -90,7 +105,8 @@
                     <tbody>
                         {% for transaction in transactions %}
                         <tr>
-                            <td>{{ transaction.timestamp }}</td>
+                           <td>{{ transaction.timestamp|date:"d M Y H:i" }}</td>
+
                             <td>{{ transaction.transaction_type }}</td>
                             <td>₹{{ transaction.amount }}</td>
 

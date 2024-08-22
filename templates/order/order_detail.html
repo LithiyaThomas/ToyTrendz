@@ -9,6 +9,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body { background-color: #f8f9fa; }
+        /* Removes underline from links */
+.no-underline {
+    text-decoration: none;
+    color: inherit; /* Keep the text color same as surrounding text */
+}
+
+/* Removes underline on hover */
+.no-underline:hover {
+    text-decoration: none;
+    color: inherit; /* Keep the text color same as surrounding text */
+}
         header {
             background-color: #ff69b4;
             padding: 10px 0;
@@ -51,7 +62,9 @@
         <div class="container-fluid">
             <div class="row align-items-center">
                 <div class="col">
-                    <h1 style="color: white; font-size: 24px; margin: 0;">COZY CRIBS</h1>
+                     <a href="{% url 'home' %}" class="no-underline">
+                        <h1 style="color: white; font-size: 24px; margin: 0;">COZY CRIBS</h1>
+                     </a>
                 </div>
                 <div class="col-auto">
                     <div class="d-flex">
@@ -68,7 +81,6 @@
             </div>
         </div>
     </header>
-
     <div class="container mt-4">
         <div class="text-center mb-4">
             <a href="{% url 'user_panel:download_invoice' order.uuid %}" class="btn btn-primary">Download Invoice</a>
@@ -81,8 +93,10 @@
                     <div class="card-body">
                         <h5 class="card-title text-primary">Order Information</h5>
                         <p class="mb-1"><strong>Order ID:</strong> {{ order.uuid }}</p>
+                        <p class="mb-1"><strong>Payment Method:</strong> {{ order.payment_method }}</p>
                         <p class="mb-1"><strong>Status:</strong> <span class="order-status status-{{ order.status|lower }}">{{ order.get_status_display }}</span></p>
                         <p class="mb-1"><strong>Payment Status:</strong> {{ order.get_payment_status_display }}</p>
+
                         <p class="mb-1"><strong>Total Price:</strong> ₹{{ order.total_price|floatformat:2 }}</p>
                     </div>
                 </div>

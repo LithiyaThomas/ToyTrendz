@@ -64,6 +64,7 @@
             <p><strong>Total Price:</strong> ${{ order.total_price|floatformat:2 }}</p>
             <p><strong>Status:</strong> {{ order.status }}</p>
             <p><strong>Payment Status:</strong> {{ order.payment_status }}</p>
+                <p class="mb-1"><strong>Payment Method:</strong> {{ order.payment_method }}</p>
         </div>
     </div>
 

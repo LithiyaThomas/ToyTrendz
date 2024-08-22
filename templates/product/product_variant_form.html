@@ -87,9 +87,10 @@
                             </div>
 
                             <div class="mb-4">
-                                <label for="variant_stock" class="form-label">Variant Stock</label>
-                                <input type="number" class="form-control" name="variant_stock" id="variant_stock" value="{% if view.object and view.object.variant_stock > 0 %}{{ view.object.variant_stock }}{% endif %}" min="1" required>
-                            </div>
+    <label for="variant_stock" class="form-label">Variant Stock</label>
+    <input type="number" class="form-control" name="variant_stock" id="variant_stock" value="{% if view.object %}{{ view.object.variant_stock }}{% endif %}" min="0" required>
+</div>
+
 
                             <div class="mb-4 form-check">
                                 <input type="checkbox" class="form-check-input" name="variant_status" id="variant_status" {% if view.object and view.object.variant_status %}checked{% endif %}>

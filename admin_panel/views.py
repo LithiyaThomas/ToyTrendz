@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db import transaction
-from django.db.models import Sum, OuterRef, Subquery, CharField, Value, F
+from django.db.models import Sum, OuterRef, Subquery, CharField, Value, F,Prefetch
 from accounts.models import User, Wallet, WalletTransaction
 from order.models import Order, OrderItem, Payment
 from .forms import AdminLoginForm, OrderStatusForm
@@ -16,6 +16,12 @@ from datetime import datetime, timedelta
 from product.models import Product,ProductVariant,ProductVariantImage
 from category.models import Category
 from brand.models import Brand
+from django.http import HttpResponse
+import logging
+from django.db.models import Q
+from django.db.models import Sum, F
+import json
+from django.core.serializers.json import DjangoJSONEncoder
 
 # Check if user is admin
 def is_admin(user):
@@ -42,10 +48,49 @@ def admin_login(request):
 
     return render(request, 'adminside/admin_login.html', {'form': form})
 
+@login_required(login_url='admin-login')
+def admin_dashboard(request):
+    period = request.GET.get('period', 'daily')
+
+    # Filter sales data based on the selected period
+    sales_dates, sales_totals, total_revenue, total_orders, start_datetime, end_datetime = filter_sales_data(period)
+
+    total_products = Product.objects.count()
+
+    # Calculate the count of orders by status
+    order_statuses = ['Pending', 'Completed', 'Cancelled']
+    order_counts = [
+        Order.objects.filter(created_at__range=(start_datetime, end_datetime), status=status).count()
+        for status in order_statuses
+    ]
+
+    # Calculate monthly earnings (sum of sales in the last 30 days)
+    today = timezone.now()
+    thirty_days_ago = today - timedelta(days=30)
+    monthly_earning = Order.objects.filter(created_at__gte=thirty_days_ago).aggregate(Sum('total_price'))['total_price__sum'] or 0
+
+    data = {
+        'total_revenue': total_revenue,
+        'total_orders': total_orders,
+        'total_products': total_products,
+        'monthly_earning': float(monthly_earning),
+        'sales_dates': json.dumps(sales_dates, cls=DjangoJSONEncoder),
+        'sales_totals': json.dumps(sales_totals, cls=DjangoJSONEncoder),
+        'order_statuses': json.dumps(order_statuses, cls=DjangoJSONEncoder),
+        'order_counts': json.dumps(order_counts, cls=DjangoJSONEncoder),
+        'period': period
+    }
+
+    # Handle AJAX requests to dynamically update data
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse(data)
+
+    return render(request, 'adminside/dashboard.html', data)
 
 def filter_sales_data(period):
     today = timezone.localdate()
 
+    # Determine the start date based on the period selected
     if period == 'yearly':
         start_date = today - timedelta(days=365)
     elif period == 'monthly':
@@ -55,70 +100,30 @@ def filter_sales_data(period):
     elif period == 'daily':
         start_date = today
     else:
-
         start_date = today
 
-
+    # Convert start and end dates to aware datetimes
     start_datetime = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
     end_datetime = timezone.make_aware(datetime.combine(today, datetime.max.time()))
 
-    print(f"Start date for period '{period}': {start_datetime}")
-    print(f"End date for period '{period}': {end_datetime}")
+    # Filter orders within the selected date range
+    sales_data = Order.objects.filter(created_at__range=(start_datetime, end_datetime))
 
+    # Calculate total revenue and total orders
+    total_revenue = sales_data.aggregate(Sum('total_price'))['total_price__sum'] or 0
+    total_orders = sales_data.count()
+
+    # Handle different time periods for sales data
     if period == 'daily':
-
-        sales_data = Order.objects.filter(created_at__date=today).aggregate(total_sales=Sum('total_price'))
-        total_sales = sales_data['total_sales'] or 0
         sales_dates = [today.strftime('%Y-%m-%d')]
-        sales_totals = [float(total_sales)]
+        sales_totals = [float(total_revenue)]
     else:
+        # Aggregate sales by date
+        sales_by_date = sales_data.values('created_at__date').annotate(total_sales=Sum('total_price')).order_by('created_at__date')
+        sales_dates = [data['created_at__date'].strftime('%Y-%m-%d') for data in sales_by_date]
+        sales_totals = [float(data['total_sales']) for data in sales_by_date]
 
-        sales_data = Order.objects.filter(created_at__date__gte=start_date).values('created_at__date').annotate(total_sales=Sum('total_price')).order_by('created_at__date')
-        sales_dates = [data['created_at__date'].strftime('%Y-%m-%d') for data in sales_data]
-        sales_totals = [float(data['total_sales']) for data in sales_data]
-
-    print(f"Period: {period}")
-    print(f"Sales Dates: {sales_dates}")
-    print(f"Sales Totals: {sales_totals}")
-
-    return sales_dates, sales_totals
-
-
-@login_required(login_url='admin-login')
-def admin_dashboard(request):
-    period = request.GET.get('period', 'daily')
-
-    sales_dates, sales_totals = filter_sales_data(period)
-
-    total_revenue = sum(sales_totals)
-
-    start_date = timezone.make_aware(datetime.strptime(sales_dates[0], '%Y-%m-%d'))
-    end_date = timezone.make_aware(datetime.strptime(sales_dates[-1], '%Y-%m-%d'))
-    total_orders = Order.objects.filter(created_at__range=(start_date, end_date)).count()
-
-    total_products = Product.objects.count()
-
-    order_statuses = ['Pending', 'Completed', 'Cancelled']
-    order_counts = [
-        Order.objects.filter(created_at__range=(start_date, end_date), status=status).count()
-        for status in order_statuses
-    ]
-
-    context = {
-        'total_revenue': total_revenue,
-        'total_orders': total_orders,
-        'total_products': total_products,
-        'sales_dates': sales_dates,
-        'sales_totals': sales_totals,
-        'order_statuses': order_statuses,
-        'order_counts': order_counts,
-    }
-
-
-    return render(request, 'adminside/dashboard.html', context)
-
-
-
+    return sales_dates, sales_totals, total_revenue, total_orders, start_datetime, end_datetime
 
 def best_selling(request):
 
@@ -129,15 +134,14 @@ def best_selling(request):
 
     default_image_url = settings.MEDIA_URL + 'photos/productvariant/default_image.jpg'
 
-
     top_products = ProductVariant.objects.select_related('product').annotate(
-        total_quantity=Sum('orderitem__quantity'),
+        total_quantity=Coalesce(Sum('orderitem__quantity'), Value(0)),
         variant_image=Coalesce(
             Subquery(image_subquery, output_field=CharField()),
             Value(default_image_url, output_field=CharField())
         ),
         offer_price=F('product__offer_price')
-    ).values(
+    ).filter(total_quantity__gt=0).values(
         'product__product_name',
         'product__product_category__category_name',
         'product__product_brand__name',
@@ -148,7 +152,6 @@ def best_selling(request):
         'variant_image',
         'total_quantity'
     ).order_by('-total_quantity')[:10]
-
 
     for product in top_products:
         product['variant_image'] = settings.MEDIA_URL + product['variant_image']
@@ -223,7 +226,41 @@ def admin_logout(request):
 @user_passes_test(is_admin)
 def order_list(request):
     orders = Order.objects.all().order_by('-created_at')
-    return render(request, 'adminside/order_list.html', {'orders': orders})
+
+    # Filter by date range
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    if start_date and end_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d')
+        end_date = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)  # Include the end date
+        orders = orders.filter(created_at__range=[start_date, end_date])
+
+    # Filter by status
+    status = request.GET.get('status')
+    if status:
+        orders = orders.filter(status=status)
+
+    # Filter by payment status
+    payment_status = request.GET.get('payment_status')
+    if payment_status:
+        orders = orders.filter(payment_status=payment_status)
+
+    # Filter by customer (username)
+    customer = request.GET.get('customer')
+    if customer:
+        orders = orders.filter(user__username__icontains=customer)
+
+    # Search by order ID
+    search = request.GET.get('search')
+    if search:
+        orders = orders.filter(Q(uuid__icontains=search) | Q(user__username__icontains=search))
+
+    context = {
+        'orders': orders,
+        'status_choices': Order.STATUS_CHOICES,
+        'payment_status_choices': Order.PAYMENT_STATUS_CHOICES,
+    }
+    return render(request, 'adminside/order_list.html', context)
 
 @user_passes_test(is_admin)
 def update_order_status(request, pk):
@@ -259,7 +296,7 @@ def cancel_order(request, pk):
                 order.save()
 
 
-                if order.payment_method in ['wallet', 'online_payment']:
+                if order.payment_method in ['wallet', 'Razorpay']:
                     wallet, created = Wallet.objects.get_or_create(user=order.user)
 
                     WalletTransaction.handle_order_cancellation(
@@ -269,7 +306,7 @@ def cancel_order(request, pk):
                         order=order
                     )
 
-                    if order.payment_method == 'online_payment':
+                    if order.payment_method == 'Razorpay':
                         Payment.objects.create(
                             order=order,
                             amount_paid=order.total_price,
@@ -294,60 +331,103 @@ def order_detail(request, pk):
 
 
 def sales_report(request):
-    if request.method == 'POST':
-        start_date = request.POST.get('start_date')
-        end_date = request.POST.get('end_date')
+    report_type = request.GET.get('report_type', 'custom')
 
-        if start_date and end_date:
+    end_date = timezone.now().date()
+    start_date = end_date  # Default to today
+
+    if report_type == 'daily':
+        start_date = end_date
+    elif report_type == 'weekly':
+        start_date = end_date - timedelta(days=7)
+    elif report_type == 'yearly':
+        start_date = end_date.replace(month=1, day=1)
+    elif report_type == 'custom':
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
+        if start_date_str and end_date_str:
             try:
-                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
             except ValueError:
-                return JsonResponse({'error': 'Invalid date format'}, status=400)
-
-            orders = Order.objects.filter(created_at__date__range=[start_date, end_date], status="Delivered")
+                return HttpResponse('Invalid date format', status=400)
         else:
-            orders = Order.objects.filter(status="Delivered")
+            start_date = end_date - timedelta(days=30)
 
-        order_items = OrderItem.objects.filter(order__in=orders)
-        total_sales = orders.aggregate(total=Sum('total_price'))['total'] or 0
-
-        product_counts = order_items.values('product__product_name').annotate(
-            total_quantity=Sum('quantity')
-        ).order_by('product__product_name')
-
-        # Include product details with each order
-        order_details = orders.prefetch_related('orderitem_set__product').values(
-            'created_at', 'uuid', 'user__username', 'total_price', 'payment_method', 'coupon_code'
-        ).annotate(
-            products=OrderItem.objects.filter(order_id=F('id')).values(
-                'product__product_name'
-            ).annotate(
-                total_quantity=Sum('quantity')
-            ).order_by('product__product_name')
-        )
-
-        data = {
-            'orders': list(order_details),
-            'total_sales': float(total_sales),
-            'product_counts': list(product_counts),
-        }
-
-        return JsonResponse(data)
-
-    # Default view for GET request
-    orders = Order.objects.filter(status="Delivered")
-    order_items = OrderItem.objects.filter(order__in=orders)
+    orders = Order.objects.filter(created_at__date__range=[start_date, end_date], status="Delivered")
     total_sales = orders.aggregate(total=Sum('total_price'))['total'] or 0
+    total_discount = orders.aggregate(discount=Sum('coupon_discount'))['discount'] or 0
+    overall_orders_count = orders.count()
 
-    product_counts = order_items.values('product__product_name').annotate(
+    # Calculating the total amount with discounts applied
+    total_after_discount = total_sales - total_discount
+
+    product_counts = OrderItem.objects.filter(order__in=orders).values('product__product_name').annotate(
         total_quantity=Sum('quantity')
-    ).order_by('product__product_name')
+    )
 
     context = {
         'orders': orders,
         'total_sales': total_sales,
+        'total_discount': total_discount,
+        'total_after_discount': total_after_discount,
+        'overall_orders_count': overall_orders_count,
         'product_counts': product_counts,
+        'start_date': start_date,
+        'end_date': end_date,
+        'report_type': report_type,
     }
 
     return render(request, 'adminside/salesreport.html', context)
+
+@user_passes_test(lambda u: u.is_staff)
+def process_cancel_request(request, order_uuid):
+    order = get_object_or_404(Order, uuid=order_uuid)
+
+    if request.method == "POST":
+        action = request.POST.get('action')
+        if action == 'approve':
+            with transaction.atomic():
+                # Update variant stock
+                for item in order.items.all():
+                    if item.variant:
+                        variant = item.variant
+                        variant.variant_stock += item.quantity
+                        variant.save()
+
+                # Cancel the order
+                order.status = 'Cancelled'
+                order.return_status = 'Approved'
+                order.save()
+
+                # Handle refunds
+                if order.payment_method in ['wallet', 'Razorpay']:
+                    wallet, created = Wallet.objects.get_or_create(user=order.user)
+
+                    WalletTransaction.handle_order_cancellation(
+                        wallet=wallet,
+                        order_amount=order.total_price,
+                        payment_method=order.payment_method,
+                        order=order
+                    )
+
+                    if order.payment_method == 'Razorpay':
+                        # Record the refund
+                        Payment.objects.create(
+                            order=order,
+                            amount_paid=order.total_price,
+                            payment_method=order.payment_method,
+                            transaction_id=f"REFUND-{order.uuid}"
+                        )
+
+                messages.success(request, "Order cancellation approved and refund initiated.")
+            return redirect('admin_order_list')  # Redirect to admin order list
+
+        elif action == 'reject':
+            order.return_status = 'Rejected'
+            order.save()
+            messages.error(request, "Order cancellation request rejected.")
+            return redirect('admin_order_list')  # Redirect to admin order list
+
+    # If not POST request, redirect to the order detail page
+    return redirect('admin_order_list')

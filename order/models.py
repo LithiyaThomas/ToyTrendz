@@ -30,8 +30,8 @@ class Order(models.Model):
     )
 
     PAYMENT_CHOICES = (
+        ('Razorpay', 'Razorpay'),
         ('cash_on_delivery', 'Cash on Delivery'),
-        ('online_payment', 'Online Payment'),
         ('wallet', 'Wallet'),
     )
 

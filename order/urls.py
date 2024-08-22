@@ -20,6 +20,6 @@ urlpatterns = [
     path('available-coupons/', views.get_available_coupons, name='available_coupons'),
     path('remove-coupon/', views.remove_coupon, name='remove_coupon'),
     path('my-wallet/', views.my_wallet, name='my_wallet'),
-
+    path('retry_payment/<uuid:order_uuid>/',views.retry_payment,name='retry_payment'),
 
 ]

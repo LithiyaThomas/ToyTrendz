@@ -16,7 +16,6 @@ from django.conf import settings
 from django.urls import reverse
 from coupon.models import Coupon
 from django.db.models import Sum
-import logging
 from decimal import Decimal
 from django.utils import timezone
 from django.db.models import F
@@ -148,6 +147,7 @@ def process_return(request, order_uuid):
     return redirect(reverse('admin_order_list'))
 
 
+
 @login_required
 def cancel_order(request, order_uuid):
     order = get_object_or_404(Order, uuid=order_uuid, user=request.user)
@@ -155,41 +155,14 @@ def cancel_order(request, order_uuid):
     if request.method == "POST":
         if order.status in ['Pending', 'Confirmed', 'Shipped']:
             with transaction.atomic():
-                # Update variant stock
-                for item in order.items.all():
-                    if item.variant:
-                        variant = item.variant
-                        variant.variant_stock += item.quantity
-                        variant.save()
-
-                # Cancel the order
-                order.status = 'Cancelled'
+                # Mark the order for cancellation, but do not cancel it yet
+                order.return_status = 'Cancel Requested'
                 order.save()
 
-                # Handle refunds
-                if order.payment_method in ['wallet', 'online_payment']:
-                    wallet, created = Wallet.objects.get_or_create(user=request.user)
-
-                    WalletTransaction.handle_order_cancellation(
-                        wallet=wallet,
-                        order_amount=order.total_price,
-                        payment_method=order.payment_method,
-                        order=order
-                    )
-
-                    if order.payment_method == 'online_payment':
-                        # Record the refund
-                        Payment.objects.create(
-                            order=order,
-                            amount_paid=order.total_price,
-                            payment_method=order.payment_method,
-                            transaction_id=f"REFUND-{order.uuid}"
-                        )
-
-                messages.success(request, "Order cancelled successfully.")
+                messages.success(request, "Order cancellation request sent. Please wait for admin approval.")
                 return redirect('order:list_orders')  # Redirect to a list of orders
         else:
-            messages.error(request, "Cannot cancel this order.")
+            messages.error(request, "Cannot request cancellation for this order.")
             return redirect('order:order_detail', order_uuid=order.uuid)  # Redirect to the order detail page
 
     # If not POST request, redirect to the order detail page
@@ -226,7 +199,7 @@ def proceed_to_payment(request):
         cart_total = 0
 
 
-    payment_options = ['wallet', 'online_payment', 'Cash on Delivery']
+    payment_options = ['wallet', 'Razorpay', 'Cash on Delivery']
 
     available_coupons = Coupon.objects.filter(
         is_active=True,
@@ -313,13 +286,15 @@ def place_order(request):
                         price=item.product.price,
 
                     )
+                    item.variant.variant_stock -= item.quantity
+                    item.variant.save()
 
                 if 'cart_total' in request.session:
                     del request.session['cart_total']
                 if 'coupon_discount' in request.session:
                     del request.session['coupon_discount']
 
-                if payment_method == 'online_payment':
+                if payment_method == 'Razorpay':
                     client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
                     razorpay_order = client.order.create({
                         'amount': int(cart_total * 100),
@@ -392,6 +367,7 @@ def place_order(request):
     else:
         return redirect('order:checkout')
 
+
 @csrf_exempt
 def razorpay_callback(request):
     if request.method == "POST":
@@ -404,6 +380,7 @@ def razorpay_callback(request):
         try:
             order = Order.objects.get(razorpay_order_id=razorpay_order_id)
 
+            # Verify the payment signature
             params_dict = {
                 'razorpay_order_id': razorpay_order_id,
                 'razorpay_payment_id': payment_id,
@@ -411,16 +388,21 @@ def razorpay_callback(request):
             }
             client.utility.verify_payment_signature(params_dict)
 
+            # Update the order status
             order.payment_status = 'Completed'
             order.status = 'Confirmed'
             order.save()
-            # Clear the cart and cart items after successful order confirmation
-            cart = Cart.objects.get(user=request.user)
-            cart_items = CartItem.objects.filter(cart=cart)
-            cart_items.delete()
-            cart.delete()
+
+            try:
+                cart = Cart.objects.get(user=request.user)
+                cart_items = CartItem.objects.filter(cart=cart)
+                cart_items.delete()
+                cart.delete()
+            except Cart.DoesNotExist:
+                print("Cart does not exist, skipping deletion.")
 
             return redirect('order:order_success', order_uuid=order.uuid)
+
         except Order.DoesNotExist:
             return redirect('order:order_failure', order_uuid=order.uuid)
         except razorpay.errors.SignatureVerificationError:
@@ -432,9 +414,9 @@ def razorpay_callback(request):
 
     return HttpResponse(status=400)
 
+
 def order_failure(request, order_uuid):
     order = get_object_or_404(Order, uuid=order_uuid)
-
     context = {
         'order': order,
     }
@@ -446,13 +428,8 @@ def order_success(request, order_uuid):
     order = get_object_or_404(Order, uuid=order_uuid)
     order_items = OrderItem.objects.filter(order=order)
 
-
-    subtotal = sum(item.product.offer_price * item.quantity for item in order.items.all())
-
-
+    subtotal = sum(item.product.offer_price * item.quantity for item in order_items)
     coupon_discount = order.coupon_discount if order.coupon_discount else 0
-
-
     total_price = subtotal - coupon_discount
 
     context = {
@@ -630,3 +607,45 @@ def my_wallet(request):
         'total_debit': total_debit,
     }
     return render(request, 'userside/wallet.html', context)
+
+
+
+@login_required
+def retry_payment(request, order_uuid):
+    order = get_object_or_404(Order, uuid=order_uuid, user=request.user)
+
+    try:
+        if order.payment_method == 'Razorpay' and order.payment_status == 'Pending':
+            client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+
+            cart_total = order.total_price
+
+            razorpay_order = client.order.create({
+                'amount': int(cart_total * 100),
+                'currency': 'INR',
+                'payment_capture': '1'
+            })
+
+
+            order.razorpay_order_id = razorpay_order['id']
+            order.payment_status = 'Pending'
+            order.save()
+            return render(request, 'order/razorpay_payment.html', {
+                'order': order,
+                'razorpay_order_id': razorpay_order['id'],
+                'razorpay_merchant_key': settings.RAZORPAY_KEY_ID,
+                'callback_url': request.build_absolute_uri(reverse('order:razorpay_callback')),
+                'amount': cart_total,
+                'currency': 'INR'
+            })
+
+        else:
+            messages.error(request, "Retry is only available for failed Razorpay payments.")
+            return redirect('order:order_failure', order_uuid=order.uuid)
+
+    except Exception as e:
+        messages.error(request, f"An error occurred while retrying the payment: {str(e)}")
+        return redirect('order:order_failure', order_uuid=order.uuid)
+
+
+

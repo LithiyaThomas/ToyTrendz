@@ -55,18 +55,23 @@ def user_register(request):
                 settings.DEFAULT_FROM_EMAIL,
                 [user.email],
             )
-            # Store the OTP in the session
+            # Store the OTP and user data in the session
             request.session['otp'] = str(otp)
             request.session['user_data'] = form.cleaned_data
             request.session['otp_creation_time'] = timezone.now().isoformat()
             return redirect('verify_otp')
         else:
-
             messages.error(request, 'Registration failed. Please correct the errors below.')
     else:
-        form = RegisterForm()
+
+        user_data = request.session.get('user_data')
+        if user_data:
+            form = RegisterForm(initial=user_data)
+        else:
+            form = RegisterForm()
 
     return render(request, 'accounts/register.html', {'form': form})
+
 
 
 # OTP verification view

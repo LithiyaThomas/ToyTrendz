@@ -11,6 +11,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        /* Removes underline from links */
+.no-underline {
+    text-decoration: none;
+    color: inherit; /* Keep the text color same as surrounding text */
+}
+
+/* Removes underline on hover */
+.no-underline:hover {
+    text-decoration: none;
+    color: inherit; /* Keep the text color same as surrounding text */
+}
         header {
             background-color: #ff69b4;
             padding: 10px 0;
@@ -154,11 +165,13 @@
 
 <body class="bg-light">
         {% csrf_token %}
-     <header style="background-color: #FF69B4; padding: 10px 0;">
+    <header style="background-color: #FF69B4; padding: 10px 0;">
         <div class="container-fluid">
             <div class="row align-items-center">
                 <div class="col">
-                    <h1 style="color: white; font-size: 24px; margin: 0;">COZY CRIBS</h1>
+                     <a href="{% url 'home' %}" class="no-underline">
+                        <h1 style="color: white; font-size: 24px; margin: 0;">COZY CRIBS</h1>
+                     </a>
                 </div>
                 <div class="col-auto">
                     <div class="d-flex">
@@ -214,7 +227,7 @@
                                         Your item has been Cancelled
                                     {% else %}
                                         {{ order.get_status_display }}<br>
-                                        {{ order.get_payment_status_display }}
+
                                     {% endif %}
                                 </div>
                             </div>
@@ -228,7 +241,9 @@
                         {% endif %}
                         <strong>Total: ₹{{ order.total_price }}</strong>
                     </div>
-
+                        {% if order.payment_status == 'Pending' and order.payment_method == 'Razorpay' %}
+                            <a href="{% url 'order:retry_payment' order.uuid %}" class="btn btn-primary">Retry Payment</a>
+                        {% endif %}
                 <div class="button-group">
                         {% if order.status == 'Pending' or order.status == 'Confirmed' or order.status == 'Shipped' %}
     <form id="cancel-order-form-{{ order.uuid }}" action="{% url 'order:cancel_order' order.uuid %}" method="post" style="display: inline;">

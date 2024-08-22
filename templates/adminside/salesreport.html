@@ -1,5 +1,6 @@
 {% extends 'adminside/base.html' %}
 {% load static %}
+{% block title %}SALES REPORT{% endblock %}
 {% block content %}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -9,11 +10,10 @@
 <section class="content-main">
     <div class="content-header">
         <div>
-            <h2 class="content-title card-title">Sales Report</h2>
             <p>Comprehensive data about your orders is available here</p>
         </div>
-        <div class="d-flex gap-2">
-            <button id="download-pdf" class="btn btn-primary">
+        <div class="d-flex gap-2 mb-3">
+            <button id="download-pdf" class="btn btn-primary me-2">
                 <i class="material-icons md-post_add"></i> Download as PDF
             </button>
             <button id="download-excel" class="btn btn-primary">
@@ -23,22 +23,23 @@
     </div>
 
     <div class="mb-4">
-        <form method="post" action="{% url 'sales_report' %}" class="row g-2">
-            {% csrf_token %}
-            <div class="col-auto d-flex align-items-center">
-                <h5 class="mb-0">Start Date:</h5>
+        <form id="report-form" method="get" action="{% url 'sales_report' %}" class="row g-2">
+            <div class="col-auto me-2">
+                <select name="report_type" id="report-type" class="form-select">
+                    <option value="daily" {% if report_type == 'daily' %}selected{% endif %}>Daily</option>
+                    <option value="weekly" {% if report_type == 'weekly' %}selected{% endif %}>Weekly</option>
+                    <option value="yearly" {% if report_type == 'yearly' %}selected{% endif %}>Yearly</option>
+                    <option value="custom" {% if report_type == 'custom' %}selected{% endif %}>Custom Date Range</option>
+                </select>
+            </div>
+            <div class="col-auto custom-date-range me-2" {% if report_type != 'custom' %}style="display: none;"{% endif %}>
+                <input type="date" name="start_date" class="form-control" placeholder="Start date" value="{{ start_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-auto custom-date-range me-2" {% if report_type != 'custom' %}style="display: none;"{% endif %}>
+                <input type="date" name="end_date" class="form-control" placeholder="End date" value="{{ end_date|date:'Y-m-d' }}">
             </div>
             <div class="col-auto">
-                <input type="date" name="start_date" class="form-control" placeholder="Start date" value="{{ start_date|default:'' }}">
-            </div>
-            <div class="col-auto d-flex align-items-center">
-                <h5 class="mb-0">End Date:</h5>
-            </div>
-            <div class="col-auto">
-                <input type="date" name="end_date" class="form-control" placeholder="End date" value="{{ end_date|default:'' }}">
-            </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-primary">Search</button>
+                <button type="submit" class="btn btn-primary">Generate Report</button>
             </div>
         </form>
     </div>
@@ -55,7 +56,7 @@
                             <th>Order Total</th>
                             <th>Payment Method</th>
                             <th>Coupon</th>
-                            <th>Products</th> <!-- Added column for products -->
+                            <th>Products</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -85,10 +86,17 @@
                     </tbody>
                 </table>
             </div>
-            <h3 class="mt-4">Total Sales: {{ total_sales|floatformat:2 }}</h3>
+             <div class="card mb-4">
+        <div class="card-body">
+            <h4>Summary</h4>
+            <p>Total Sales: {{ total_sales|floatformat:2 }}</p>
+            <p>Total Discount: {{ total_discount|floatformat:2 }}</p>
+            <p>Total After Discount: {{ total_after_discount|floatformat:2 }}</p>
+            <p>Total Orders: {{ overall_orders_count }}</p>
         </div>
     </div>
-
+        </div>
+    </div>
     <div class="card mb-4">
         <div class="card-body">
             <h4>Product Details</h4>
@@ -101,10 +109,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for product in product_counts %}
+                        {% for item in product_counts %}
                             <tr>
-                                <td>{{ product.product__product_name }}</td>
-                                <td>{{ product.total_quantity }}</td>
+                                <td>{{ item.product__product_name }}</td>
+                                <td>{{ item.total_quantity }}</td>
                             </tr>
                         {% empty %}
                             <tr>
@@ -122,130 +130,168 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded and parsed');
 
-    document.getElementById('download-pdf').addEventListener('click', function () {
-        console.log('PDF download button clicked');
-        const { jsPDF } = window.jspdf;
-        if (!jsPDF) {
-            console.error('jsPDF not loaded');
-            alert('PDF library not loaded. Please check your internet connection and try again.');
-            return;
+    const reportType = document.getElementById('report-type');
+    const customDateRange = document.querySelectorAll('.custom-date-range');
+
+    reportType.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            customDateRange.forEach(el => el.style.display = 'block');
+        } else {
+            customDateRange.forEach(el => el.style.display = 'none');
         }
-
-        fetch('{% url "sales_report" %}', {
-            method: 'POST',
-            body: new URLSearchParams(new FormData(document.querySelector('form'))),
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Received data:', data);
-
-            const doc = new jsPDF();
-
-            // Generate PDF content
-            doc.text("Sales Report", 14, 22);
-
-            // Orders table
-            doc.autoTable({
-                head: [['Date', 'Order ID', 'Customer', 'Order Total', 'Payment Method', 'Coupon']],
-                body: data.orders.map(order => [
-                    new Date(order.created_at).toLocaleDateString(),
-                    order.uuid,
-                    order.user__username,
-                    order.total_price,
-                    order.payment_method,
-                    order.coupon_code || 'Nil'
-                ]),
-                startY: 30,
-                theme: 'striped',
-                headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontSize: 12, fontStyle: 'bold' },
-                bodyStyles: { fontSize: 10, halign: 'center' },
-                alternateRowStyles: { fillColor: [240, 240, 240] },
-                margin: { top: 40 }
-            });
-
-            doc.text(`Total Sales: ${data.total_sales.toFixed(2)}`, 14, doc.autoTable.previous.finalY + 10);
-
-            // Product details table
-            doc.addPage();
-            doc.text("Product Details", 14, 22);
-            doc.autoTable({
-                head: [['Product Name', 'Total Quantity Sold']],
-                body: data.product_counts.map(item => [item.product__product_name, item.total_quantity]),
-                startY: 30,
-                theme: 'striped',
-                headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontSize: 12, fontStyle: 'bold' },
-                bodyStyles: { fontSize: 10, halign: 'center' },
-                alternateRowStyles: { fillColor: [240, 240, 240] },
-                margin: { top: 40 }
-            });
-
-            doc.save('sales-report.pdf');
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while generating the PDF. Please check the console for more details.');
-        });
     });
 
-    document.getElementById('download-excel').addEventListener('click', function () {
-        console.log('Excel download button clicked');
-        if (!XLSX) {
+    setTimeout(function() {
+        document.getElementById('download-pdf').addEventListener('click', function () {
+            console.log('PDF download button clicked');
+            generatePDF();
+        });
+
+        document.getElementById('download-excel').addEventListener('click', function () {
+            console.log('Excel download button clicked');
+            generateExcel();
+        });
+    }, 1000);
+
+   function generatePDF() {
+    console.log('generatePDF function called');
+    if (typeof window.jspdf !== 'undefined') {
+        const { jsPDF } = window.jspdf;
+        try {
+            console.log('Creating new jsPDF instance');
+            const doc = new jsPDF();
+
+            console.log('Adding text to PDF');
+            doc.text("Sales Report", 14, 22);
+
+            // Add report type and date range
+            doc.setFontSize(12);
+            doc.text(`Report Type: ${reportType.value}`, 14, 30);
+            if (reportType.value === 'custom') {
+                const startDate = document.querySelector('input[name="start_date"]').value;
+                const endDate = document.querySelector('input[name="end_date"]').value;
+                doc.text(`Date Range: ${startDate} to ${endDate}`, 14, 38);
+            }
+
+            console.log('Creating orders table');
+            const ordersData = Array.from(document.querySelectorAll('#sales-table tbody tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                return [
+                    cells[0].textContent,
+                    cells[1].textContent,
+                    cells[2].textContent,
+                    cells[3].textContent,
+                    cells[4].textContent,
+                    cells[5].textContent
+                ];
+            });
+
+            doc.autoTable({
+                head: [['Date', 'Order ID', 'Customer', 'Order Total', 'Payment Method', 'Coupon']],
+                body: ordersData,
+                startY: 46,
+                theme: 'striped',
+                headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontSize: 12, fontStyle: 'bold' },
+                bodyStyles: { fontSize: 10, halign: 'center' },
+                alternateRowStyles: { fillColor: [240, 240, 240] },
+                margin: { top: 46 }
+            });
+
+            console.log('Adding total sales to PDF');
+            const totalSalesElement = document.querySelector('.total-sales');
+            if (totalSalesElement) {
+                const totalSales = totalSalesElement.textContent;
+                doc.text(totalSales, 14, doc.autoTable.previous.finalY + 10);
+            }
+
+            console.log('Adding new page to PDF');
+            doc.addPage();
+
+            console.log('Adding product details to PDF');
+            doc.text("Product Details", 14, 22);
+            const productData = Array.from(document.querySelectorAll('#product-table tbody tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                return [cells[0].textContent, cells[1].textContent];
+            });
+
+            doc.autoTable({
+                head: [['Product Name', 'Total Quantity Sold']],
+                body: productData,
+                startY: 30,
+                theme: 'striped',
+                headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontSize: 12, fontStyle: 'bold' },
+                bodyStyles: { fontSize: 10, halign: 'center' },
+                alternateRowStyles: { fillColor: [240, 240, 240] },
+                margin: { top: 30 }
+            });
+
+            console.log('Saving PDF');
+            doc.save('sales-report.pdf');
+            console.log('PDF saved successfully');
+        } catch (error) {
+            console.error('Error in PDF generation:', error);
+            alert('An error occurred while generating the PDF. Please check the console for more details.');
+        }
+    } else {
+        console.error('jsPDF not loaded');
+        alert('PDF library not loaded. Please check your internet connection and try again.');
+    }
+}
+    function generateExcel() {
+        console.log('generateExcel function called');
+        if (!window.XLSX) {
             console.error('XLSX library not loaded');
             alert('Excel library not loaded. Please check your internet connection and try again.');
             return;
         }
+        console.log('XLSX loaded successfully');
 
-        fetch('{% url "sales_report" %}', {
-            method: 'POST',
-            body: new URLSearchParams(new FormData(document.querySelector('form'))),
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Received data:', data);
-
+        try {
             const wb = XLSX.utils.book_new();
 
+            // Report Info sheet
+            const reportInfo = [{
+                'Report Type': reportType.value,
+                'Start Date': document.querySelector('input[name="start_date"]').value,
+                'End Date': document.querySelector('input[name="end_date"]').value
+            }];
+            const ws1 = XLSX.utils.json_to_sheet(reportInfo);
+            XLSX.utils.book_append_sheet(wb, ws1, 'Report Info');
+
             // Orders sheet
-            const ws1 = XLSX.utils.json_to_sheet(data.orders.map(order => ({
-                Date: new Date(order.created_at).toLocaleDateString(),
-                'Order ID': order.uuid,
-                Customer: order.user__username,
-                'Order Total': order.total_price,
-                'Payment Method': order.payment_method,
-                Coupon: order.coupon_code || 'Nil'
-            })));
-            XLSX.utils.book_append_sheet(wb, ws1, 'Orders');
+            const ordersData = Array.from(document.querySelectorAll('#sales-table tbody tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                return {
+                    Date: cells[0].textContent,
+                    'Order ID': cells[1].textContent,
+                    Customer: cells[2].textContent,
+                    'Order Total': cells[3].textContent,
+                    'Payment Method': cells[4].textContent,
+                    Coupon: cells[5].textContent
+                };
+            });
+            const ws2 = XLSX.utils.json_to_sheet(ordersData);
+            XLSX.utils.book_append_sheet(wb, ws2, 'Orders');
 
             // Product details sheet
-            const ws2 = XLSX.utils.json_to_sheet(data.product_counts);
-            XLSX.utils.book_append_sheet(wb, ws2, 'Product Details');
+            const productData = Array.from(document.querySelectorAll('#product-table tbody tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                return {
+                    'Product Name': cells[0].textContent,
+                    'Total Quantity Sold': cells[1].textContent
+                };
+            });
+            const ws3 = XLSX.utils.json_to_sheet(productData);
+            XLSX.utils.book_append_sheet(wb, ws3, 'Product Details');
 
+            // Generate Excel file
             XLSX.writeFile(wb, 'sales-report.xlsx');
-        })
-        .catch(error => {
-            console.error('Error:', error);
+            console.log('Excel file saved successfully');
+        } catch (error) {
+            console.error('Error in generating Excel file:', error);
             alert('An error occurred while generating the Excel file. Please check the console for more details.');
-        });
-    });
+        }
+    }
 });
 </script>
-
 {% endblock %}

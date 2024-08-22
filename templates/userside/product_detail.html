@@ -13,6 +13,17 @@
     background-color: #ff69b4;
     padding: 10px 0;
 }
+/* Removes underline from links */
+.no-underline {
+    text-decoration: none;
+    color: inherit; /* Keep the text color same as surrounding text */
+}
+
+/* Removes underline on hover */
+.no-underline:hover {
+    text-decoration: none;
+    color: inherit; /* Keep the text color same as surrounding text */
+}
 
 header .container {
     display: flex;
@@ -199,17 +210,21 @@ header .icon:hover {
 
 <body>
  {% csrf_token %}
-   <header>
+<header>
     <div class="container">
-        <h1>COZY CRIBS</h1>
+        <a href="{% url 'home' %}" class="no-underline">
+            <h1 class="heading">COZY CRIBS</h1>
+        </a>
+
         <div class="icons">
-            <a href="{% url 'user_panel:wishlist' %}"><i class="fas fa-heart"></i>
-            <a href="{% url 'cart:view_cart' %}" class="icon"><i class="fas fa-shopping-bag"></i></a>
+            <a href="{% url 'user_panel:wishlist' %}" class="icon no-underline"><i class="fas fa-heart"></i></a>
+            <a href="{% url 'cart:view_cart' %}" class="icon no-underline"><i class="fas fa-shopping-bag"></i></a>
+
             {% if not user.is_authenticated %}
-                <a href="{% url 'user_login' %}" class="icon"><i class="fas fa-user"></i></a>
+                <a href="{% url 'user_login' %}" class="icon no-underline"><i class="fas fa-user"></i></a>
             {% else %}
-                <a href="{% url 'user_logout' %}" class="icon"><i class="fas fa-sign-out-alt"></i></a>
-                <a href="{% url 'user_panel:user_profile' %}" class="icon"><i class="fas fa-user-circle"></i></a>
+                <a href="{% url 'user_logout' %}" class="icon no-underline"><i class="fas fa-sign-out-alt"></i></a>
+                <a href="{% url 'user_panel:user_profile' %}" class="icon no-underline"><i class="fas fa-user-circle"></i></a>
             {% endif %}
         </div>
     </div>
@@ -271,6 +286,13 @@ header .icon:hover {
                         <button type="button" class="btn btn-outline-secondary" id="quantity-minus">-</button>
                         <input type="number" id="quantity" name="quantity" min="1" value="1">
                         <button type="button" class="btn btn-outline-secondary" id="quantity-plus">+</button>
+                         <!-- Stock Status Display -->
+
+                            {% if selected_variant.variant_stock > 0 %}
+                                <p class="text-success mt-2">In Stock</p>
+                            {% else %}
+                                <p class="text-danger mt-2">Out of Stock</p>
+                            {% endif %}
                     </div>
                            <button type="submit" class="add-to-cart-btn mt-3">Add to Cart</button>
      <button type="button" class="btn btn-outline-secondary add-to-wishlist-btn mt-3" data-variant-id="{{ variant.id }}" data-in-wishlist="{% if variant in user.wishlist_set.all %}true{% else %}false{% endif %}">

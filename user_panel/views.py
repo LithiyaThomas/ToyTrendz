@@ -27,13 +27,13 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from order.models import Order,OrderItem
 
-
 User = get_user_model()
+
 class UserPanelProductListView(ListView):
     model = Product
     template_name = 'userside/product_list.html'
     context_object_name = 'products'
-    paginate_by = 12
+    paginate_by = 4
 
     def get_queryset(self):
         queryset = Product.objects.all().select_related('product_category', 'product_brand') \

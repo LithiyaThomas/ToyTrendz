@@ -44,11 +44,19 @@ class ProductCreateView(CreateView):
     template_name = 'product/product_form.html'
     success_url = reverse_lazy('product:product_list')
 
+    def form_valid(self, form):
+        # Handle the saving of the form and image file
+        product = form.save(commit=False)
+        # If you need to modify the product instance, do so here
+        product.save()
+        return super().form_valid(form)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['categories'] = Category.objects.all()
         context['brands'] = Brand.objects.all()
         return context
+
 
 # Product UpdateView
 

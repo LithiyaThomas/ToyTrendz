@@ -17,11 +17,14 @@ from product.models import Product,ProductVariant,ProductVariantImage
 from category.models import Category
 from brand.models import Brand
 from django.http import HttpResponse
-import logging
 from django.db.models import Q
-from django.db.models import Sum, F
+from django.db.models import Sum, F,Count
+from django.contrib.auth.decorators import user_passes_test
+from django.shortcuts import render
 import json
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db.models.functions import TruncDate,TruncDay,TruncMonth
+from django.db.models import Avg
 
 # Check if user is admin
 def is_admin(user):
@@ -48,44 +51,130 @@ def admin_login(request):
 
     return render(request, 'adminside/admin_login.html', {'form': form})
 
-@login_required(login_url='admin-login')
+
+
+@user_passes_test(is_admin)
 def admin_dashboard(request):
-    period = request.GET.get('period', 'daily')
-
-    # Filter sales data based on the selected period
-    sales_dates, sales_totals, total_revenue, total_orders, start_datetime, end_datetime = filter_sales_data(period)
-
+    # Basic metrics
+    total_revenue = Order.objects.filter(payment_status='Completed').aggregate(Sum('total_price'))['total_price__sum'] or 0
+    total_orders = Order.objects.exclude(status='Cancelled').count()
     total_products = Product.objects.count()
+    total_categories = Category.objects.filter(is_deleted=False).count()
 
-    # Calculate the count of orders by status
-    order_statuses = ['Pending', 'Completed', 'Cancelled']
-    order_counts = [
-        Order.objects.filter(created_at__range=(start_datetime, end_datetime), status=status).count()
-        for status in order_statuses
-    ]
+    # Monthly earnings
+    current_month = timezone.now().month
+    monthly_earnings = Order.objects.filter(
+        payment_status='Completed',
+        created_at__month=current_month
+    ).aggregate(Sum('total_price'))['total_price__sum'] or 0
 
-    # Calculate monthly earnings (sum of sales in the last 30 days)
-    today = timezone.now()
-    thirty_days_ago = today - timedelta(days=30)
-    monthly_earning = Order.objects.filter(created_at__gte=thirty_days_ago).aggregate(Sum('total_price'))['total_price__sum'] or 0
+    # Yearly sales data
+    current_year = timezone.now().year
+    yearly_sales = (Order.objects.filter(payment_status='Completed', created_at__year=current_year)
+                    .annotate(month=TruncMonth('created_at'))
+                    .values('month')
+                    .annotate(total_sales=Sum('total_price'))
+                    .order_by('month'))
 
-    data = {
+    # Monthly sales data (last 30 days)
+    thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
+    monthly_sales = (Order.objects.filter(payment_status='Completed', created_at__gte=thirty_days_ago)
+                     .annotate(day=TruncDay('created_at'))
+                     .values('day')
+                     .annotate(total_sales=Sum('total_price'))
+                     .order_by('day'))
+
+    # Total sales and average order value
+    total_sales = sum(sale['total_sales'] for sale in yearly_sales)
+    avg_order_value = Order.objects.filter(payment_status='Completed').aggregate(Avg('total_price'))['total_price__avg'] or 0
+
+    conversion_rate = 65  # Placeholder for conversion rate
+
+    # Latest orders
+    latest_orders = Order.objects.order_by('-created_at')[:10]
+
+    # Top 10 best-selling products
+    best_selling_products = (OrderItem.objects
+                                 .values('product__product_name')
+                                 .annotate(total_sold=Sum('quantity'))
+                                 .order_by('-total_sold')[:10])
+
+    # Top 10 best-selling categories
+    best_selling_categories = (OrderItem.objects
+                                   .values('product__product_category__category_name')  # Ensure category_name exists
+                                   .annotate(total_sold=Sum('quantity'))
+                                   .order_by('-total_sold')[:10])
+
+    # Top 10 best-selling brands
+    best_selling_brands = (OrderItem.objects
+                               .values('product__product_brand__name')  # Corrected field name
+                               .annotate(total_sold=Sum('quantity'))
+                               .order_by('-total_sold')[:10])
+
+    # Order status distribution
+    order_status_distribution = (Order.objects
+                                 .values('status')
+                                 .annotate(count=Count('id'))
+                                 .order_by('status'))
+
+    # Prepare data for charts
+    daily_sales = Order.objects.filter(payment_status='Completed') \
+        .annotate(truncated_date=TruncDate('created_at')) \
+        .values('truncated_date') \
+        .annotate(total_sales=Sum('total_price')) \
+        .order_by('truncated_date')
+
+    # Prepare data for top categories and brands
+    top_categories = OrderItem.objects.values('product__product_category__category_name') \
+                         .annotate(total_sold=Sum('quantity')) \
+                         .order_by('-total_sold')[:5]
+
+    top_brands = OrderItem.objects.values('product__product_brand__name') \
+                     .annotate(total_sold=Sum('quantity')) \
+                     .order_by('-total_sold')[:5]
+
+    # Prepare data for charts
+    daily_sales_labels = [sale['truncated_date'].strftime('%Y-%m-%d') for sale in daily_sales]
+    daily_sales_data = [float(sale['total_sales']) for sale in daily_sales]
+
+    monthly_sales_labels = [sale['day'].strftime('%Y-%m-%d') for sale in monthly_sales]
+    monthly_sales_data = [float(sale['total_sales']) for sale in monthly_sales]
+
+    yearly_sales_labels = [sale['month'].strftime('%Y-%m') for sale in yearly_sales]
+    yearly_sales_data = [float(sale['total_sales']) for sale in yearly_sales]
+
+    top_categories_labels = [category['product__product_category__category_name'] for category in top_categories]
+    top_categories_data = [float(category['total_sold']) for category in top_categories]
+
+    top_brands_labels = [brand['product__product_brand__name'] for brand in top_brands]
+    top_brands_data = [float(brand['total_sold']) for brand in top_brands]
+
+    context = {
         'total_revenue': total_revenue,
         'total_orders': total_orders,
         'total_products': total_products,
-        'monthly_earning': float(monthly_earning),
-        'sales_dates': json.dumps(sales_dates, cls=DjangoJSONEncoder),
-        'sales_totals': json.dumps(sales_totals, cls=DjangoJSONEncoder),
-        'order_statuses': json.dumps(order_statuses, cls=DjangoJSONEncoder),
-        'order_counts': json.dumps(order_counts, cls=DjangoJSONEncoder),
-        'period': period
+        'total_categories': total_categories,
+        'monthly_earnings': monthly_earnings,
+        'total_sales': total_sales,
+        'avg_order_value': round(avg_order_value, 2),
+        'conversion_rate': conversion_rate,
+        'latest_orders': latest_orders,
+        'best_selling_products': best_selling_products,
+        'best_selling_categories': best_selling_categories,
+        'best_selling_brands': best_selling_brands,
+        'order_status_distribution': order_status_distribution,
+        'daily_sales_labels': daily_sales_labels,
+        'daily_sales_data': daily_sales_data,
+        'monthly_sales_labels': monthly_sales_labels,
+        'monthly_sales_data': monthly_sales_data,
+        'yearly_sales_labels': yearly_sales_labels,
+        'yearly_sales_data': yearly_sales_data,
+        'top_categories_labels': top_categories_labels,
+        'top_categories_data': top_categories_data,
+        'top_brands_labels': top_brands_labels,
+        'top_brands_data': top_brands_data,
     }
-
-    # Handle AJAX requests to dynamically update data
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return JsonResponse(data)
-
-    return render(request, 'adminside/dashboard.html', data)
+    return render(request, 'adminside/dashboard.html', context)
 
 def filter_sales_data(period):
     today = timezone.localdate()
@@ -124,6 +213,7 @@ def filter_sales_data(period):
         sales_totals = [float(data['total_sales']) for data in sales_by_date]
 
     return sales_dates, sales_totals, total_revenue, total_orders, start_datetime, end_datetime
+
 
 def best_selling(request):
 

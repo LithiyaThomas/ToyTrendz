@@ -1,232 +1,341 @@
 {% extends 'adminside/base.html' %}
-
-{% block title %}Dashboard{% endblock %}
-
+{% load static %}
 {% block content %}
-<div class="container-fluid">
-    <!-- Filter options -->
-    <div class="row mb-4">
-    <div class="col">
-        <select id="period-select" class="form-control">
-            <option value="daily" {% if period == 'daily' %}selected{% endif %}>Daily</option>
-            <option value="weekly" {% if period == 'weekly' %}selected{% endif %}>Weekly</option>
-            <option value="monthly" {% if period == 'monthly' %}selected{% endif %}>Monthly</option>
-            <option value="yearly" {% if period == 'yearly' %}selected{% endif %}>Yearly</option>
-        </select>
-    </div>
-    <div class="col-auto">
-        <button id="filter-button" class="btn btn-primary">Filter</button>
-    </div>
-</div>
-    <!-- Dashboard Cards -->
-    <div class="row">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="card-title">Revenue</div>
-                            <div class="card-text" id="revenue">${{ total_revenue|floatformat:2 }}</div>
-                            <small>Shipping fees are not included</small>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="card-title">Orders</div>
-                            <div class="card-text" id="orders">{{ total_orders }}</div>
-                            <small>Excluding orders in transit</small>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="card-title">Products</div>
-                            <div class="card-text" id="products">{{ total_products }}</div>
-                            <small>In 0 Categories</small>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-box fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="card-title">Monthly Earning</div>
-                            <div class="card-text" id="monthly-earning">${{ monthly_earning|floatformat:2 }}</div>
-                            <small>Based on your local time</small>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Charts -->
- <div class="row">
-    <div class="col-xl-8 col-lg-7">
-        <div class="card shadow mb-4">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Sales Overview</h6>
-            </div>
-            <div class="card-body">
-               <canvas id="sales-chart"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-4 col-lg-5">
-        <div class="card shadow mb-4">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Order Status</h6>
-            </div>
-            <div class="card-body">
-              <canvas id="orders-chart"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
+<div class="screen-overlay"></div>
 
-    <!-- Best Selling Products Link -->
-    <div class="row">
-        <div class="col text-center">
-            <a href="{% url 'admin-best-selling' %}" class="btn btn-info">Best Selling Products</a>
+<main class="main-wrap">
+
+
+    <section class="content-main">
+        <div class="content-header">
+            <div>
+                <h2 class="content-title card-title">Dashboard</h2>
+                <p>Comprehensive overview of your business</p>
+            </div>
         </div>
-    </div>
-</div>
-{% endblock %}
-{% block extra_scripts %}
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6">
+                <div class="card card-body mb-4">
+                    <article class="icontext">
+                        <span class="icon icon-sm rounded-circle bg-success-light"><i class="text-success material-icons md-local_shipping"></i></span>
+                        <div class="text">
+                            <h6 class="mb-1 card-title">Orders</h6>
+                            <span>{{ total_orders }}</span>
+                            <span class="text-sm">Excluding cancelled orders</span>
+                        </div>
+                    </article>
+                </div>
+            </div>
+            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6">
+                <div class="card card-body mb-4">
+                    <article class="icontext">
+                        <span class="icon icon-sm rounded-circle bg-warning-light"><i class="text-warning material-icons md-qr_code"></i></span>
+                        <div class="text">
+                            <h6 class="mb-1 card-title">Products</h6>
+                            <span>{{ total_products }}</span>
+                            <span class="text-sm">In {{ total_categories }} Categories</span>
+                        </div>
+                    </article>
+                </div>
+            </div>
+            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6">
+                <div class="card card-body mb-4">
+                    <article class="icontext">
+                        <span class="icon icon-sm rounded-circle bg-info-light"><i class="text-info material-icons md-monetization_on"></i></span>
+                        <div class="text">
+                            <h6 class="mb-1 card-title">Total Revenue</h6>
+                            <span>₹{{ total_revenue }}</span>
+                        </div>
+                    </article>
+                </div>
+            </div>
+            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6">
+                <div class="card card-body mb-4">
+                    <article class="icontext">
+                        <span class="icon icon-sm rounded-circle bg-primary-light"><i class="text-primary material-icons md-person"></i></span>
+                        <div class="text">
+                            <h6 class="mb-1 card-title">Conversion Rate</h6>
+                            <span>{{ conversion_rate }}%</span>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales Reports -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Sales Reports</h5>
+                        <ul class="nav nav-tabs mb-3" id="salesTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="daily-tab" data-bs-toggle="tab" data-bs-target="#daily" type="button" role="tab" aria-controls="daily" aria-selected="true">Daily</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="monthly-tab" data-bs-toggle="tab" data-bs-target="#monthly" type="button" role="tab" aria-controls="monthly" aria-selected="false">Monthly</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="yearly-tab" data-bs-toggle="tab" data-bs-target="#yearly" type="button" role="tab" aria-controls="yearly" aria-selected="false">Yearly</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="salesTabsContent">
+                            <div class="tab-pane fade show active" id="daily" role="tabpanel" aria-labelledby="daily-tab">
+                                <canvas id="dailySalesChart" height="200"></canvas>
+                            </div>
+                            <div class="tab-pane fade" id="monthly" role="tabpanel" aria-labelledby="monthly-tab">
+                                <canvas id="monthlySalesChart" height="200"></canvas>
+                            </div>
+                            <div class="tab-pane fade" id="yearly" role="tabpanel" aria-labelledby="yearly-tab">
+                                <canvas id="yearlySalesChart" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Charts -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Top 5 Categories</h5>
+                        <canvas id="categoriesChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Top 5 Brands</h5>
+                        <canvas id="brandsChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Selling Items -->
+        <div class="row mb-4">
+            <!-- Best Selling Products -->
+            <div class="col-12 col-xl-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Top 10 Best-Selling Products</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Total Sold</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for product in best_selling_products %}
+                                    <tr>
+                                        <td>{{ product.variant_product_product_name }}</td>
+                                        <td>{{ product.total_sold }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Best Selling Categories -->
+            <div class="col-12 col-xl-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Top 10 Best-Selling Categories</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Total Sold</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for category in best_selling_categories %}
+                                    <tr>
+                                        <td>{{ category.variant_productproduct_category_category_name }}</td>
+                                        <td>{{ category.total_sold }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Best Selling Brands -->
+            <div class="col-12 col-xl-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Top 10 Best-Selling Brands</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Brand</th>
+                                        <th>Total Sold</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for brand in best_selling_brands %}
+                                    <tr>
+                                        <td>{{ brand.variant_productproduct_brand_brand_name }}</td>
+                                            <td>{{ brand.total_sold }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </section>
+</main>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM fully loaded and parsed');
-
-    var salesChart, ordersChart;
-
-    function createCharts() {
-        var salesChartCanvas = document.getElementById('sales-chart');
-        var ordersChartCanvas = document.getElementById('orders-chart');
-
-        console.log('Sales Chart Canvas:', salesChartCanvas);
-        console.log('Orders Chart Canvas:', ordersChartCanvas);
-
-        if (salesChartCanvas && ordersChartCanvas) {
-            // Parse the data
-            var salesDates = JSON.parse('{{ sales_dates|safe }}');
-            var salesTotals = JSON.parse('{{ sales_totals|safe }}');
-            var orderStatuses = JSON.parse('{{ order_statuses|safe }}');
-            var orderCounts = JSON.parse('{{ order_counts|safe }}');
-            console.log('Sales Dates:', salesDates);
-            console.log('Sales Totals:', salesTotals);
-            console.log('Order Statuses:', orderStatuses);
-            console.log('Order Counts:', orderCounts);
-
-            // Create Sales Chart
-            salesChart = new Chart(salesChartCanvas, {
-                type: 'line',
-                data: {
-                    labels: salesDates,
-                    datasets: [{
-                        label: 'Total Sales',
-                        data: salesTotals,
-                        backgroundColor: 'rgba(0, 123, 255, 0.5)',
-                        borderColor: 'rgba(0, 123, 255, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
+    // Daily Sales Chart
+    var ctxDaily = document.getElementById('dailySalesChart').getContext('2d');
+    var dailySalesChart = new Chart(ctxDaily, {
+        type: 'line',
+        data: {
+            labels: {{ daily_sales_labels|safe }},
+            datasets: [{
+                label: 'Daily Sales',
+                data: {{ daily_sales_data|safe }},
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
                 }
-            });
-
-            // Create Orders Chart
-            ordersChart = new Chart(ordersChartCanvas, {
-                type: 'doughnut',
-                data: {
-                    labels: orderStatuses,
-                    datasets: [{
-                        data: orderCounts,
-                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
-                        hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
-                    }]
-                },
-                options: {
-                    responsive: true
-                }
-            });
-
-            console.log('Charts created successfully');
-        } else {
-            console.error('One or both canvas elements are missing');
-        }
-    }
-
-    createCharts();
-
-    // Handle filter changes
-    var filterButton = document.getElementById('filter-button');
-    var periodSelect = document.getElementById('period-select');
-
-    filterButton.addEventListener('click', function() {
-        var period = periodSelect.value;
-        console.log('Filter clicked, period:', period);
-
-        fetch(`/admin_panel/admin-dashboard/?period=${period}`, {
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': '{{ csrf_token }}'
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Received data:', data);
-
-            // Update charts
-            salesChart.data.labels = JSON.parse(data.sales_dates);
-            salesChart.data.datasets[0].data = JSON.parse(data.sales_totals);
-            salesChart.update();
-
-            ordersChart.data.labels = JSON.parse(data.order_statuses);
-            ordersChart.data.datasets[0].data = JSON.parse(data.order_counts);
-            ordersChart.update();
-
-            // Update dashboard data
-            document.getElementById('revenue').textContent = `$${data.total_revenue.toFixed(2)}`;
-            document.getElementById('orders').textContent = data.total_orders;
-            document.getElementById('products').textContent = data.total_products;
-            document.getElementById('monthly-earning').textContent = `$${data.monthly_earning.toFixed(2)}`;
-        })
-        .catch(error => console.error('Error:', error));
+        }
     });
-});
+
+    // Monthly Sales Chart
+    var ctxMonthly = document.getElementById('monthlySalesChart').getContext('2d');
+    var monthlySalesChart = new Chart(ctxMonthly, {
+        type: 'bar',
+        data: {
+            labels: {{ monthly_sales_labels|safe }},
+            datasets: [{
+                label: 'Monthly Sales',
+                data: {{ monthly_sales_data|safe }},
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgb(54, 162, 235)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Yearly Sales Chart
+    var ctxYearly = document.getElementById('yearlySalesChart').getContext('2d');
+    var yearlySalesChart = new Chart(ctxYearly, {
+        type: 'bar',
+        data: {
+            labels: {{ yearly_sales_labels|safe }},
+            datasets: [{
+                label: 'Yearly Sales',
+                data: {{ yearly_sales_data|safe }},
+                backgroundColor: 'rgba(255, 159, 64, 0.6)',
+                borderColor: 'rgb(255, 159, 64)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Categories Chart
+    var ctxCategories = document.getElementById('categoriesChart').getContext('2d');
+    var categoriesChart = new Chart(ctxCategories, {
+        type: 'pie',
+        data: {
+            labels: {{ top_categories_labels|safe }},
+            datasets: [{
+                data: {{ top_categories_data|safe }},
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.6)',
+                    'rgba(54, 162, 235, 0.6)',
+                    'rgba(255, 206, 86, 0.6)',
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(153, 102, 255, 0.6)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+
+    // Brands Chart
+    var ctxBrands = document.getElementById('brandsChart').getContext('2d');
+    var brandsChart = new Chart(ctxBrands, {
+        type: 'doughnut',
+        data: {
+            labels: {{ top_brands_labels|safe }},
+            datasets: [{
+                data: {{ top_brands_data|safe }},
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.6)',
+                    'rgba(54, 162, 235, 0.6)',
+                    'rgba(255, 206, 86, 0.6)',
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(153, 102, 255, 0.6)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
 </script>
-{% endblock %}
+
+{% endblock content %}
